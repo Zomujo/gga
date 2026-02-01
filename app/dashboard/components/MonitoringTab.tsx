@@ -44,12 +44,12 @@ export function MonitoringTab({
           <p className="text-gray-600">Comprehensive insights and performance metrics</p>
         </div>
 
-        {isAdmin && adminDistrict && onAdminDistrictChange && (
+        {isAdmin && onAdminDistrictChange && (
           <label className="flex items-center gap-2 text-sm">
             <span className="font-medium text-gray-700">Assembly Filter</span>
             <select
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-              value={adminDistrict}
+              value={adminDistrict || ""}
               onChange={(e) => onAdminDistrictChange(e.target.value)}
             >
               <option value="">All Assemblies</option>

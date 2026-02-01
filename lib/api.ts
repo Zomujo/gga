@@ -518,6 +518,92 @@ const generateAdditionalCases = () => {
 
 generateAdditionalCases();
 
+// Generate additional mock data for analytics (60 more cases across 60 days)
+const generateAdditionalMockCases = (): ApiComplaint[] => {
+  const categories = [
+    "roads_infrastructure",
+    "water_sanitation",
+    "electricity_energy",
+    "waste_management",
+    "healthcare_services",
+    "education_services",
+    "public_safety",
+    "market_commerce",
+    "environmental_issues",
+  ];
+  const statuses: ("pending" | "in_progress" | "resolved" | "rejected" | "escalated")[] = [
+    "pending",
+    "in_progress",
+    "resolved",
+    "rejected",
+    "escalated",
+  ];
+  const districts: ("assembly_a" | "assembly_b" | "assembly_c")[] = [
+    "assembly_a",
+    "assembly_b",
+    "assembly_c",
+  ];
+  const navigatorIds = ["nav-a1", "nav-a2", "nav-b1", "nav-b2", "nav-c1"];
+  const officerIds = ["officer-a1", "officer-a2", "officer-b1", "officer-b2", "officer-c1"];
+
+  const additionalCases: ApiComplaint[] = [];
+
+  for (let i = 0; i < 60; i++) {
+    const daysAgo = 60 - i; // Spread cases across 60 days
+    const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+    const category = categories[i % categories.length];
+    const district = districts[i % districts.length];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const navigatorId = navigatorIds[i % navigatorIds.length];
+    const officerId = status !== "pending" ? officerIds[i % officerIds.length] : undefined;
+
+    // Generate response time (1-72 hours for responded cases)
+    const responseHours = Math.floor(Math.random() * 72) + 1;
+    const respondedAt =
+      status !== "pending"
+        ? new Date(createdAt.getTime() + responseHours * 60 * 60 * 1000)
+        : undefined;
+
+    // Generate resolution time (3-30 days for resolved cases)
+    const resolutionDays = Math.floor(Math.random() * 28) + 3;
+    const resolvedAt =
+      status === "resolved"
+        ? new Date(createdAt.getTime() + resolutionDays * 24 * 60 * 60 * 1000)
+        : new Date(Date.now() - Math.floor(Math.random() * 24) * 60 * 60 * 1000);
+
+    // Generate escalation date (5-15 days after creation for escalated)
+    const escalationDays = Math.floor(Math.random() * 10) + 5;
+    const escalatedAt =
+      status === "escalated"
+        ? new Date(createdAt.getTime() + escalationDays * 24 * 60 * 60 * 1000)
+        : undefined;
+
+    additionalCases.push({
+      id: `case-gen-${i + 1}`,
+      code: `GGA-G-${String(i + 1).padStart(3, "0")}`,
+      fullName: `Citizen ${i + 1}`,
+      phoneNumber: `+23324${String(i).padStart(7, "0")}`,
+      category: category as any,
+      district: district,
+      description: `Generated case for ${category.replace(/_/g, " ")}`,
+      status: status,
+      assignedToId: officerId,
+      createdById: navigatorId,
+      respondedAt: respondedAt?.toISOString(),
+      escalatedAt: escalatedAt?.toISOString(),
+      escalationReason:
+        status === "escalated" ? "Requires higher level attention" : undefined,
+      createdAt: createdAt.toISOString(),
+      updatedAt: resolvedAt.toISOString(),
+    });
+  }
+
+  return additionalCases;
+};
+
+// Add generated cases to mock complaints
+mockComplaints = [...mockComplaints, ...generateAdditionalMockCases()];
+
 // Hydrate user references
 mockComplaints = mockComplaints.map((complaint) => {
   const assignedTo = complaint.assignedToId
@@ -536,6 +622,11 @@ mockComplaints = mockComplaints.map((complaint) => {
 // Simulate network delay
 const delay = (ms: number = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper function to convert category code to readable label
+const getCategoryLabel = (category: string): string => {
+  return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+};
 
 export async function loginUser(input: {
   email: string;
@@ -1210,6 +1301,204 @@ export async function getAssemblyPerformance(
       activeCases,
     };
   });
+}
+
+// Response Time Distribution - categorize cases by response time buckets
+export async function getResponseTimeDistribution(
+  token: string,
+  district?: string
+): Promise<{ bucket: string; count: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints.filter((c) => c.respondedAt);
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  const buckets = {
+    "0-6h": 0,
+    "6-12h": 0,
+    "12-24h": 0,
+    "1-3d": 0,
+    "3-7d": 0,
+    "7d+": 0,
+  };
+
+  cases.forEach((c) => {
+    const created = new Date(c.createdAt).getTime();
+    const responded = new Date(c.respondedAt!).getTime();
+    const hours = (responded - created) / (1000 * 60 * 60);
+
+    if (hours <= 6) buckets["0-6h"]++;
+    else if (hours <= 12) buckets["6-12h"]++;
+    else if (hours <= 24) buckets["12-24h"]++;
+    else if (hours <= 72) buckets["1-3d"]++;
+    else if (hours <= 168) buckets["3-7d"]++;
+    else buckets["7d+"]++;
+  });
+
+  return Object.entries(buckets).map(([bucket, count]) => ({ bucket, count }));
+}
+
+// Resolution Time by Category
+export async function getResolutionTimeByCategory(
+  token: string,
+  district?: string
+): Promise<{ category: string; avgDays: number; count: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints.filter((c) => c.status === "resolved");
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  const categoryMap: Record<string, { totalTime: number; count: number }> = {};
+
+  cases.forEach((c) => {
+    const category = getCategoryLabel(c.category);
+    const created = new Date(c.createdAt).getTime();
+    const updated = new Date(c.updatedAt).getTime();
+    const days = (updated - created) / (1000 * 60 * 60 * 24);
+
+    if (!categoryMap[category]) {
+      categoryMap[category] = { totalTime: 0, count: 0 };
+    }
+    categoryMap[category].totalTime += days;
+    categoryMap[category].count++;
+  });
+
+  return Object.entries(categoryMap)
+    .map(([category, data]) => ({
+      category,
+      avgDays: Math.round((data.totalTime / data.count) * 10) / 10,
+      count: data.count,
+    }))
+    .sort((a, b) => b.avgDays - a.avgDays);
+}
+
+// District Officer Performance
+export async function getDistrictOfficerPerformance(
+  token: string
+): Promise<{ name: string; totalCases: number; resolved: number; avgResponseHours: number; resolutionRate: number }[]> {
+  await delay(200);
+
+  const officers = mockUsers.filter((u) => u.role === "district_officer");
+
+  return officers.map((officer) => {
+    const cases = mockComplaints.filter((c) => c.assignedToId === officer.id);
+    const resolved = cases.filter((c) => c.status === "resolved").length;
+    const resolutionRate = cases.length > 0 ? Math.round((resolved / cases.length) * 100) : 0;
+
+    const respondedCases = cases.filter((c) => c.respondedAt);
+    const totalResponseTime = respondedCases.reduce((sum, c) => {
+      const created = new Date(c.createdAt).getTime();
+      const responded = new Date(c.respondedAt!).getTime();
+      return sum + (responded - created);
+    }, 0);
+    const avgResponseHours =
+      respondedCases.length > 0
+        ? Math.round((totalResponseTime / respondedCases.length / (1000 * 60 * 60)) * 10) / 10
+        : 0;
+
+    return {
+      name: officer.fullName,
+      totalCases: cases.length,
+      resolved,
+      avgResponseHours,
+      resolutionRate,
+    };
+  }).sort((a, b) => b.resolutionRate - a.resolutionRate);
+}
+
+// Weekly Activity Pattern - cases by day of week
+export async function getWeeklyActivityPattern(
+  token: string,
+  district?: string
+): Promise<{ day: string; submitted: number; resolved: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints;
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayMap: Record<string, { submitted: number; resolved: number }> = {};
+
+  days.forEach((day) => {
+    dayMap[day] = { submitted: 0, resolved: 0 };
+  });
+
+  cases.forEach((c) => {
+    const createdDay = days[new Date(c.createdAt).getDay()];
+    dayMap[createdDay].submitted++;
+
+    if (c.status === "resolved") {
+      const resolvedDay = days[new Date(c.updatedAt).getDay()];
+      dayMap[resolvedDay].resolved++;
+    }
+  });
+
+  return days.map((day) => ({
+    day: day.substring(0, 3), // Mon, Tue, etc.
+    submitted: dayMap[day].submitted,
+    resolved: dayMap[day].resolved,
+  }));
+}
+
+// Escalation Analytics
+export async function getEscalationAnalytics(
+  token: string,
+  district?: string
+): Promise<{
+  totalEscalated: number;
+  escalationRate: number;
+  byCategory: { category: string; count: number; percentage: number }[];
+  avgDaysBeforeEscalation: number;
+}> {
+  await delay(200);
+
+  let allCases = mockComplaints;
+  if (district) {
+    allCases = allCases.filter((c) => c.district === district);
+  }
+
+  const escalatedCases = allCases.filter((c) => c.status === "escalated" || c.escalatedAt);
+  const escalationRate = allCases.length > 0 ? Math.round((escalatedCases.length / allCases.length) * 100) : 0;
+
+  // By category
+  const categoryMap: Record<string, number> = {};
+  escalatedCases.forEach((c) => {
+    const category = getCategoryLabel(c.category);
+    categoryMap[category] = (categoryMap[category] || 0) + 1;
+  });
+
+  const byCategory = Object.entries(categoryMap)
+    .map(([category, count]) => ({
+      category,
+      count,
+      percentage: Math.round((count / escalatedCases.length) * 100),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Average days before escalation
+  const casesWithEscalationDate = escalatedCases.filter((c) => c.escalatedAt);
+  const totalDays = casesWithEscalationDate.reduce((sum, c) => {
+    const created = new Date(c.createdAt).getTime();
+    const escalated = new Date(c.escalatedAt!).getTime();
+    return sum + (escalated - created) / (1000 * 60 * 60 * 24);
+  }, 0);
+  const avgDaysBeforeEscalation =
+    casesWithEscalationDate.length > 0
+      ? Math.round((totalDays / casesWithEscalationDate.length) * 10) / 10
+      : 0;
+
+  return {
+    totalEscalated: escalatedCases.length,
+    escalationRate,
+    byCategory,
+    avgDaysBeforeEscalation,
+  };
 }
 
 export { ApiError };
