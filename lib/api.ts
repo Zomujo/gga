@@ -896,12 +896,23 @@ export interface ComplaintStats {
   avgResponseHours: number;
   resolutionRate: number;
   overdueCases: number;
+  activeCasesChange?: number;
+  avgResponseHoursChange?: number;
+  resolutionRateChange?: number;
+  overdueCasesChange?: number;
+}
+
+export interface ComplaintStatsWithTrends extends ComplaintStats {
+  activeCasesChange: number;
+  avgResponseHoursChange: number;
+  resolutionRateChange: number;
+  overdueCasesChange: number;
 }
 
 export async function getComplaintStats(
   token: string,
   options?: { district?: string }
-): Promise<ComplaintStats> {
+): Promise<ComplaintStatsWithTrends> {
   await delay();
 
   let cases = mockComplaints;
@@ -910,6 +921,7 @@ export async function getComplaintStats(
     cases = cases.filter((c) => c.district === options.district);
   }
 
+  // Current week calculations
   const activeCases = cases.filter((c) =>
     ["pending", "in_progress", "escalated"].includes(c.status)
   ).length;
@@ -939,11 +951,51 @@ export async function getComplaintStats(
     return daysOld > 7;
   }).length;
 
+  // Last week calculations (cases created/updated 7-14 days ago)
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+  const lastWeekCases = cases.filter((c) => {
+    const created = new Date(c.createdAt).getTime();
+    return created >= twoWeeksAgo && created < oneWeekAgo;
+  });
+
+  const lastWeekActiveCases = lastWeekCases.filter((c) =>
+    ["pending", "in_progress", "escalated"].includes(c.status)
+  ).length;
+
+  const lastWeekResolvedCases = lastWeekCases.filter((c) => c.status === "resolved").length;
+  const lastWeekTotalCases = lastWeekCases.length;
+  const lastWeekResolutionRate =
+    lastWeekTotalCases > 0 ? (lastWeekResolvedCases / lastWeekTotalCases) * 100 : 0;
+
+  const lastWeekRespondedCases = lastWeekCases.filter((c) => c.respondedAt);
+  const lastWeekTotalResponseTime = lastWeekRespondedCases.reduce((sum, c) => {
+    const created = new Date(c.createdAt).getTime();
+    const responded = new Date(c.respondedAt!).getTime();
+    return sum + (responded - created);
+  }, 0);
+  const lastWeekAvgResponseHours =
+    lastWeekRespondedCases.length > 0
+      ? lastWeekTotalResponseTime / lastWeekRespondedCases.length / (1000 * 60 * 60)
+      : 0;
+
+  const lastWeekOverdueCases = lastWeekCases.filter((c) => {
+    if (c.status !== "pending") return false;
+    const created = new Date(c.createdAt).getTime();
+    const daysOld = (Date.now() - created) / (1000 * 60 * 60 * 24);
+    return daysOld > 7;
+  }).length;
+
   return {
     activeCases,
     avgResponseHours: Math.round(avgResponseHours * 10) / 10,
     resolutionRate: Math.round(resolutionRate * 10) / 10,
     overdueCases,
+    activeCasesChange: activeCases - lastWeekActiveCases,
+    avgResponseHoursChange: Math.round((avgResponseHours - lastWeekAvgResponseHours) * 10) / 10,
+    resolutionRateChange: Math.round((resolutionRate - lastWeekResolutionRate) * 10) / 10,
+    overdueCasesChange: overdueCases - lastWeekOverdueCases,
   };
 }
 
@@ -1010,6 +1062,154 @@ export async function getOverdueComplaints(
   });
 
   return overdue;
+}
+
+// Analytics & Chart Data Functions
+export async function getCasesByAssembly(
+  token: string
+): Promise<{ assembly: string; total: number; pending: number; inProgress: number; resolved: number; rejected: number }[]> {
+  await delay(200);
+
+  const assemblies = ["assembly_a", "assembly_b", "assembly_c"];
+  
+  return assemblies.map((assembly) => {
+    const cases = mockComplaints.filter((c) => c.district === assembly);
+    return {
+      assembly: assembly === "assembly_a" ? "Assembly A" : assembly === "assembly_b" ? "Assembly B" : "Assembly C",
+      total: cases.length,
+      pending: cases.filter((c) => c.status === "pending").length,
+      inProgress: cases.filter((c) => c.status === "in_progress").length,
+      resolved: cases.filter((c) => c.status === "resolved").length,
+      rejected: cases.filter((c) => c.status === "rejected").length,
+    };
+  });
+}
+
+export async function getCasesByCategory(
+  token: string,
+  district?: string
+): Promise<{ category: string; count: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints;
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  const categoryMap: Record<string, number> = {};
+  cases.forEach((c) => {
+    const categoryLabel = c.category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    categoryMap[categoryLabel] = (categoryMap[categoryLabel] || 0) + 1;
+  });
+
+  return Object.entries(categoryMap)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getCasesByStatus(
+  token: string,
+  district?: string
+): Promise<{ status: string; count: number; percentage: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints;
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  const total = cases.length;
+  const statusMap: Record<string, number> = {};
+  
+  cases.forEach((c) => {
+    const statusLabel = c.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    statusMap[statusLabel] = (statusMap[statusLabel] || 0) + 1;
+  });
+
+  return Object.entries(statusMap).map(([status, count]) => ({
+    status,
+    count,
+    percentage: Math.round((count / total) * 100),
+  }));
+}
+
+export async function getCasesTrend(
+  token: string,
+  district?: string
+): Promise<{ date: string; submitted: number; resolved: number }[]> {
+  await delay(200);
+
+  let cases = mockComplaints;
+  if (district) {
+    cases = cases.filter((c) => c.district === district);
+  }
+
+  // Group by last 30 days
+  const last30Days = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - i));
+    return date;
+  });
+
+  return last30Days.map((date) => {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const submitted = cases.filter((c) => {
+      const created = new Date(c.createdAt);
+      return created >= dayStart && created <= dayEnd;
+    }).length;
+
+    const resolved = cases.filter((c) => {
+      if (c.status !== "resolved") return false;
+      const updated = new Date(c.updatedAt);
+      return updated >= dayStart && updated <= dayEnd;
+    }).length;
+
+    return {
+      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      submitted,
+      resolved,
+    };
+  });
+}
+
+export async function getAssemblyPerformance(
+  token: string
+): Promise<{ assembly: string; resolutionRate: number; avgResponseHours: number; activeCases: number }[]> {
+  await delay(200);
+
+  const assemblies = ["assembly_a", "assembly_b", "assembly_c"];
+
+  return assemblies.map((assembly) => {
+    const cases = mockComplaints.filter((c) => c.district === assembly);
+    const resolved = cases.filter((c) => c.status === "resolved").length;
+    const resolutionRate = cases.length > 0 ? Math.round((resolved / cases.length) * 100) : 0;
+
+    const respondedCases = cases.filter((c) => c.respondedAt);
+    const totalResponseTime = respondedCases.reduce((sum, c) => {
+      const created = new Date(c.createdAt).getTime();
+      const responded = new Date(c.respondedAt!).getTime();
+      return sum + (responded - created);
+    }, 0);
+    const avgResponseHours =
+      respondedCases.length > 0
+        ? Math.round((totalResponseTime / respondedCases.length / (1000 * 60 * 60)) * 10) / 10
+        : 0;
+
+    const activeCases = cases.filter((c) =>
+      ["pending", "in_progress", "escalated"].includes(c.status)
+    ).length;
+
+    return {
+      assembly: assembly === "assembly_a" ? "Assembly A" : assembly === "assembly_b" ? "Assembly B" : "Assembly C",
+      resolutionRate,
+      avgResponseHours,
+      activeCases,
+    };
+  });
 }
 
 export { ApiError };

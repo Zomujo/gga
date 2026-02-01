@@ -9,6 +9,7 @@ import {
   type ApiComplaint,
   type ApiUser,
   type NavigatorUpdate,
+  type ComplaintStatsWithTrends,
 } from "@/lib/api";
 
 interface UseMonitoringOptions {
@@ -17,12 +18,7 @@ interface UseMonitoringOptions {
 }
 
 export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
-  const [monitoringStats, setMonitoringStats] = useState<{
-    activeCases: number;
-    avgResponseHours: number;
-    resolutionRate: number;
-    overdueCases: number;
-  } | null>(null);
+  const [monitoringStats, setMonitoringStats] = useState<ComplaintStatsWithTrends | null>(null);
   const [overdueComplaints, setOverdueComplaints] = useState<ApiComplaint[]>(
     []
   );
@@ -36,29 +32,37 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
       {
         label: "Active Cases",
         value: monitoringStats?.activeCases ?? 0,
-        change: "0",
-        trend: "up" as const,
+        change: monitoringStats?.activeCasesChange 
+          ? (monitoringStats.activeCasesChange > 0 ? `+${monitoringStats.activeCasesChange}` : `${monitoringStats.activeCasesChange}`)
+          : "0",
+        trend: (monitoringStats?.activeCasesChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "blue" as const,
       },
       {
         label: "Avg Response",
         value: `${monitoringStats?.avgResponseHours ?? 0}h`,
-        change: "0h",
-        trend: "down" as const,
+        change: monitoringStats?.avgResponseHoursChange
+          ? (monitoringStats.avgResponseHoursChange > 0 ? `+${monitoringStats.avgResponseHoursChange}h` : `${monitoringStats.avgResponseHoursChange}h`)
+          : "0h",
+        trend: (monitoringStats?.avgResponseHoursChange ?? 0) < 0 ? ("up" as const) : ("down" as const),
         color: "green" as const,
       },
       {
         label: "Resolution Rate",
         value: `${monitoringStats?.resolutionRate ?? 0}%`,
-        change: "0%",
-        trend: "up" as const,
+        change: monitoringStats?.resolutionRateChange
+          ? (monitoringStats.resolutionRateChange > 0 ? `+${monitoringStats.resolutionRateChange}%` : `${monitoringStats.resolutionRateChange}%`)
+          : "0%",
+        trend: (monitoringStats?.resolutionRateChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "purple" as const,
       },
       {
         label: "Overdue Cases",
         value: monitoringStats?.overdueCases ?? 0,
-        change: "0",
-        trend: "up" as const,
+        change: monitoringStats?.overdueCasesChange
+          ? (monitoringStats.overdueCasesChange > 0 ? `+${monitoringStats.overdueCasesChange}` : `${monitoringStats.overdueCasesChange}`)
+          : "0",
+        trend: (monitoringStats?.overdueCasesChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "red" as const,
       },
     ],

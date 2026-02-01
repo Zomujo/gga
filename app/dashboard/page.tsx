@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [newCaseModal, setNewCaseModal] = useState(false);
   const [adminDistrict, setAdminDistrict] = useState(
-    districtOptions[0]?.value ?? "ablekuma_central"
+    districtOptions[0]?.value ?? "assembly_a"
   );
 
   const {
@@ -311,6 +311,7 @@ export default function DashboardPage() {
       case "monitoring":
         return (
           <MonitoringTab
+            token={token!}
             monitoringMetrics={monitoringMetrics}
             overdueComplaints={overdueComplaints}
             navigatorUpdates={navigatorUpdates}

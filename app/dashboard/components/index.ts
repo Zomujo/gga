@@ -11,5 +11,6 @@ export * from "./MetricsGrid";
 export * from "./AlertsSection";
 export * from "./NavigatorUpdates";
 export * from "./MonitoringTab";
+export * from "./AnalyticsCharts";
 export * from "./UssdTab";
 
