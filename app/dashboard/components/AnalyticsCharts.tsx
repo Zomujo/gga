@@ -355,7 +355,7 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
                   stroke: '#9ca3af',
                   strokeWidth: 1,
                 }}
-                label={({ status, percentage }) => `${status} ${percentage}%`}
+                label={(entry: any) => `${entry.status} ${entry.percentage}%`}
                 outerRadius={120}
                 innerRadius={60}
                 fill="#8884d8"
