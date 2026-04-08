@@ -2,12 +2,13 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { getComplaintByCode, type ApiComplaint } from "@/lib/api";
 
 export default function TrackReport() {
   const router = useRouter();
   const [ticketNumber, setTicketNumber] = useState("");
   const [searching, setSearching] = useState(false);
-  const [caseData, setCaseData] = useState<any>(null);
+  const [caseData, setCaseData] = useState<ApiComplaint | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async (e: FormEvent) => {
@@ -17,27 +18,18 @@ export default function TrackReport() {
     setCaseData(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Mock case data based on ticket number format
-      if (ticketNumber.match(/GGA-[ABC]-\d{3}/)) {
-        const mockCase = {
-          code: ticketNumber,
-          status: ["pending", "in_progress", "resolved"][
-            Math.floor(Math.random() * 3)
-          ],
-          category: "Roads & Infrastructure",
-          description: "Sample issue description",
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        setCaseData(mockCase);
-      } else {
-        setError("Ticket number not found. Please check and try again.");
+      if (!ticketNumber.match(/GGA-[A-Z]-\d{3,}/)) {
+        setError("Invalid ticket format. Use format like GGA-A-001.");
+        return;
       }
-    } catch (err) {
-      setError("Failed to search. Please try again.");
+      const data = await getComplaintByCode(ticketNumber.trim());
+      setCaseData(data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to search. Please try again."
+      );
     } finally {
       setSearching(false);
     }
@@ -160,7 +152,7 @@ export default function TrackReport() {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-semibold text-gray-700">Category</p>
-                  <p className="mt-1 text-gray-900">{caseData.category}</p>
+                  <p className="mt-1 text-gray-900">{caseData.category.replace(/_/g, " ")}</p>
                 </div>
 
                 <div>

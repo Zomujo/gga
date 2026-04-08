@@ -2,8 +2,21 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { submitComplaint } from "@/lib/api";
-import { categoryOptions, districtOptions } from "@/app/dashboard/utils/constants";
+import { submitComplaint, getLocations, getPublicStats } from "@/lib/api";
+import { categoryOptions } from "@/app/dashboard/utils/constants";
+
+interface LocationOption {
+  value: string;
+  label: string;
+}
+
+interface PublicStats {
+  totalCases: number;
+  resolved: number;
+  inProgress: number;
+  pending: number;
+  byCategory: { category: string; count: number }[];
+}
 
 export default function PublicDashboard() {
   const router = useRouter();
@@ -11,6 +24,12 @@ export default function PublicDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
+  const [statsLocationId, setStatsLocationId] = useState<string>("");
 
   const [form, setForm] = useState({
     phoneNumber: "",
@@ -18,6 +37,55 @@ export default function PublicDashboard() {
     category: "roads_infrastructure",
     description: "",
   });
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLocationsLoading(true);
+      try {
+        const response = await getLocations();
+        const rows = response.rows ?? [];
+        const opts = rows.map((row) => ({ value: row.id, label: row.name }));
+        setLocations(opts);
+        if (opts.length > 0) {
+          const firstLocation = opts[0].value;
+          setForm((prev) => ({ ...prev, district: firstLocation }));
+          setStatsLocationId(firstLocation);
+        }
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : "Failed to load locations"
+        );
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!statsLocationId) {
+        setStatsLoading(false);
+        setPublicStats(null);
+        return;
+      }
+      setStatsLoading(true);
+      setStatsError(null);
+      try {
+        const stats = await getPublicStats(statsLocationId);
+        setPublicStats(stats);
+      } catch (error) {
+        setStatsError(
+          error instanceof Error ? error.message : "Failed to load public stats"
+        );
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [statsLocationId]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,14 +95,16 @@ export default function PublicDashboard() {
 
     try {
       // For public submission, we use a dummy token
-      const result = await submitComplaint("mock-token-public", form);
+      const result = await submitComplaint("public", form);
       setSubmitSuccess(`Your report has been submitted successfully! Your ticket number is: ${result.code}`);
       setForm({
         phoneNumber: "",
-        district: "assembly_a",
+        district: form.district,
         category: "roads_infrastructure",
         description: "",
       });
+      const refreshed = await getPublicStats(statsLocationId || undefined);
+      setPublicStats(refreshed);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Failed to submit report");
     } finally {
@@ -147,14 +217,21 @@ export default function PublicDashboard() {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, district: e.target.value }))
                   }
+                  disabled={locationsLoading || locations.length === 0}
                   className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 >
-                  {districtOptions.map((option) => (
+                  {locations.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
+                {locations.length === 0 && !locationsLoading && (
+                  <p className="mt-2 text-sm text-amber-700">
+                    No locations are configured yet. Ask the backend admin to create
+                    locations before submitting reports.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -229,101 +306,69 @@ export default function PublicDashboard() {
               case details are protected for privacy.
             </p>
 
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-xl border border-gray-200 bg-white p-6">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-600">Assembly A</span>
-                  <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                    Active
-                  </span>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">45</p>
-                <p className="text-sm text-gray-600">Total cases</p>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Resolved:</span>
-                    <span className="font-semibold text-gray-900">35</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">In Progress:</span>
-                    <span className="font-semibold text-gray-900">8</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Pending:</span>
-                    <span className="font-semibold text-gray-900">2</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-6">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-600">Assembly B</span>
-                  <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                    Active
-                  </span>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">23</p>
-                <p className="text-sm text-gray-600">Total cases</p>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Resolved:</span>
-                    <span className="font-semibold text-gray-900">20</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">In Progress:</span>
-                    <span className="font-semibold text-gray-900">2</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Pending:</span>
-                    <span className="font-semibold text-gray-900">1</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-6">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-600">Assembly C</span>
-                  <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                    Active
-                  </span>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">12</p>
-                <p className="text-sm text-gray-600">Total cases</p>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Resolved:</span>
-                    <span className="font-semibold text-gray-900">11</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">In Progress:</span>
-                    <span className="font-semibold text-gray-900">1</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Pending:</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
-                </div>
-              </div>
+            <div className="mb-6 flex items-center gap-3">
+              <label className="text-sm font-semibold text-gray-700">Location</label>
+              <select
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                value={statsLocationId}
+                onChange={(e) => setStatsLocationId(e.target.value)}
+              >
+                {locations.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {statsError && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-medium text-red-800">{statsError}</p>
+              </div>
+            )}
+
+            {statsLoading ? (
+              <p className="text-sm text-gray-600">Loading community stats...</p>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-4">
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <p className="text-sm font-semibold text-gray-600">Total Cases</p>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">
+                    {publicStats?.totalCases ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <p className="text-sm font-semibold text-gray-600">Resolved</p>
+                  <p className="mt-2 text-3xl font-bold text-emerald-700">
+                    {publicStats?.resolved ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <p className="text-sm font-semibold text-gray-600">In Progress</p>
+                  <p className="mt-2 text-3xl font-bold text-blue-700">
+                    {publicStats?.inProgress ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <p className="text-sm font-semibold text-gray-600">Pending</p>
+                  <p className="mt-2 text-3xl font-bold text-amber-700">
+                    {publicStats?.pending ?? 0}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="mt-8">
               <h3 className="mb-4 text-lg font-bold text-gray-900">
                 Common Service Categories
               </h3>
               <div className="flex flex-wrap gap-2">
-                {[
-                  "Roads & Infrastructure",
-                  "Water & Sanitation",
-                  "Waste Management",
-                  "Electricity",
-                  "Healthcare Services",
-                  "Public Safety",
-                ].map((category) => (
+                {(publicStats?.byCategory ?? []).slice(0, 8).map((category) => (
                   <span
-                    key={category}
+                    key={category.category}
                     className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700"
                   >
-                    {category}
+                    {category.category.replace(/_/g, " ")} ({category.count})
                   </span>
                 ))}
               </div>

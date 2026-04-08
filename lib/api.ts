@@ -1,8 +1,6 @@
-// Mock API for GGA Governance System
-// This simulates the backend API with comprehensive mock data for demo purposes
-
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3305/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "/api/v1";
 
 interface ApiErrorPayload {
   message?: string;
@@ -22,50 +20,144 @@ class ApiError extends Error {
   }
 }
 
+type BackendRole = "STAFF_OFFICER" | "ADMIN" | "FIELD_AGENT";
+type FrontendRole = "district_officer" | "admin" | "navigator";
+
+type BackendStatus =
+  | "RECEIVED"
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "RESOLVED"
+  | "CLOSED_WITH_REASONS"
+  | "ESCALATED";
+
+type FrontendStatus =
+  | "pending"
+  | "in_progress"
+  | "resolved"
+  | "rejected"
+  | "escalated";
+
+type BackendCategory =
+  | "ROADS_INFRASTRUCTURE"
+  | "WATER_SANITATION"
+  | "ELECTRICITY_ENERGY"
+  | "WASTE_MANAGEMENT"
+  | "HEALTHCARE_SERVICES"
+  | "EDUCATION_SERVICES"
+  | "PUBLIC_SAFETY"
+  | "MARKET_COMMERCE"
+  | "ENVIRONMENTAL_ISSUES"
+  | "DOCUMENTATION_SERVICES"
+  | "TRANSPORTATION"
+  | "OTHER";
+
+type FrontendCategory =
+  | "roads_infrastructure"
+  | "water_sanitation"
+  | "electricity_energy"
+  | "waste_management"
+  | "healthcare_services"
+  | "education_services"
+  | "public_safety"
+  | "market_commerce"
+  | "environmental_issues"
+  | "documentation_services"
+  | "transportation"
+  | "other";
+
+interface RawApiSuccess<T> {
+  statusCode?: number;
+  message?: string;
+  data?: T;
+}
+
+interface RawPaginated<T> {
+  rows?: T[];
+  meta?: {
+    page?: number;
+    pageSize?: number;
+    total?: number;
+  };
+}
+
+interface RawLocation {
+  id: string;
+  name: string;
+  region?: string;
+}
+
+interface RawUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: BackendRole | string;
+  locationId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface RawCase {
+  id: string;
+  code: string;
+  fullName?: string;
+  phoneNumber?: string;
+  category?: BackendCategory | string;
+  otherCategory?: string | null;
+  description?: string;
+  community?: string;
+  landmark?: string;
+  status?: BackendStatus | string;
+  assignedToId?: string | null;
+  createdById?: string | null;
+  channel?: string;
+  locationId?: string;
+  attachmentUrl?: string;
+  expectedResolutionDate?: string;
+  respondedAt?: string;
+  resolvedAt?: string;
+  closedAt?: string;
+  closureReason?: string;
+  escalatedAt?: string;
+  escalationReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: RawUser;
+  createdBy?: RawUser;
+}
+
 export interface ApiUser {
   id: string;
   email: string;
   fullName: string;
   username?: string;
-  role: "district_officer" | "admin" | "navigator";
+  role: FrontendRole;
   district?: string | null;
+  locationId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ApiComplaint {
   id: string;
   code: string;
-  // Citizen Information
   fullName?: string;
   age?: number;
   gender?: "male" | "female" | "other" | string;
   assistiveDevice?: string;
   otherAssistiveDevice?: string | null;
-  // Contact Information
   phoneNumber: string;
   caregiverPhoneNumber?: string;
   language?: string;
-  // Issue Classification
-  category:
-    | "roads_infrastructure"
-    | "water_sanitation"
-    | "electricity_energy"
-    | "waste_management"
-    | "healthcare_services"
-    | "education_services"
-    | "public_safety"
-    | "market_commerce"
-    | "environmental_issues"
-    | "other";
+  category: FrontendCategory;
   otherCategory?: string | null;
   issueTypes?: string[];
   otherIssueType?: string | null;
-  // Request Information
   requestType?: string;
   otherRequest?: string | null;
-  // Location & Details
-  district: "assembly_a" | "assembly_b" | "assembly_c";
+  district: string;
   description?: string;
-  status: "pending" | "in_progress" | "resolved" | "rejected" | "escalated";
+  status: FrontendStatus;
   assignedToId?: string | null;
   assignedTo?: ApiUser;
   createdById?: string | null;
@@ -74,8 +166,10 @@ export interface ApiComplaint {
   respondedAt?: string | null;
   escalatedAt?: string | null;
   escalationReason?: string | null;
+  attachmentUrl?: string;
   createdAt: string;
   updatedAt: string;
+  locationId?: string;
 }
 
 interface AuthResponse {
@@ -83,565 +177,237 @@ interface AuthResponse {
   accessToken: string;
 }
 
-// ============================================================================
-// MOCK DATA
-// ============================================================================
+interface LocationCache {
+  loaded: boolean;
+  byId: Map<string, RawLocation>;
+  districtToLocationId: Map<string, string>;
+}
 
-// Mock Users
-const mockUsers: ApiUser[] = [
-  // Public/Anonymous user for citizen submissions
-  {
-    id: "public",
-    email: "public@system.gga",
-    fullName: "Public Citizen",
-    role: "navigator",
-    district: null,
-  },
-  // Admins
-  {
-    id: "admin-1",
-    email: "admin@gga.org",
-    fullName: "Sarah Administrator",
-    role: "admin",
-    district: null,
-  },
-  {
-    id: "admin-2",
-    email: "coordinator@gga.org",
-    fullName: "Michael Coordinator",
-    role: "admin",
-    district: null,
-  },
-  // District Officers - Assembly A
-  {
-    id: "officer-a1",
-    email: "officer.a1@assembly-a.gov",
-    fullName: "John Officer",
-    role: "district_officer",
-    district: "assembly_a",
-  },
-  {
-    id: "officer-a2",
-    email: "officer.a2@assembly-a.gov",
-    fullName: "Mary Smith",
-    role: "district_officer",
-    district: "assembly_a",
-  },
-  // District Officers - Assembly B
-  {
-    id: "officer-b1",
-    email: "officer.b1@assembly-b.gov",
-    fullName: "David Johnson",
-    role: "district_officer",
-    district: "assembly_b",
-  },
-  {
-    id: "officer-b2",
-    email: "officer.b2@assembly-b.gov",
-    fullName: "Grace Williams",
-    role: "district_officer",
-    district: "assembly_b",
-  },
-  // District Officers - Assembly C
-  {
-    id: "officer-c1",
-    email: "officer.c1@assembly-c.gov",
-    fullName: "Peter Brown",
-    role: "district_officer",
-    district: "assembly_c",
-  },
-  // Navigators - Assembly A
-  {
-    id: "nav-a1",
-    email: "navigator.a1@gga.org",
-    fullName: "Alice Navigator",
-    role: "navigator",
-    district: "assembly_a",
-  },
-  {
-    id: "nav-a2",
-    email: "navigator.a2@gga.org",
-    fullName: "Bob Field",
-    role: "navigator",
-    district: "assembly_a",
-  },
-  // Navigators - Assembly B
-  {
-    id: "nav-b1",
-    email: "navigator.b1@gga.org",
-    fullName: "Carol Community",
-    role: "navigator",
-    district: "assembly_b",
-  },
-  {
-    id: "nav-b2",
-    email: "navigator.b2@gga.org",
-    fullName: "Daniel Outreach",
-    role: "navigator",
-    district: "assembly_b",
-  },
-  // Navigators - Assembly C
-  {
-    id: "nav-c1",
-    email: "navigator.c1@gga.org",
-    fullName: "Emma Service",
-    role: "navigator",
-    district: "assembly_c",
-  },
-];
-
-// Mock Complaints/Cases
-let mockComplaints: ApiComplaint[] = [
-  // Assembly A Cases (High Volume - 45 cases)
-  {
-    id: "case-a001",
-    code: "GGA-A-001",
-    fullName: "Kwame Mensah",
-    phoneNumber: "+233241234567",
-    category: "roads_infrastructure",
-    district: "assembly_a",
-    description: "Large pothole on Main Street near the market causing damage to vehicles",
-    status: "in_progress",
-    assignedToId: "officer-a1",
-    createdById: "nav-a1",
-    expectedResolutionDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    respondedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-a002",
-    code: "GGA-A-002",
-    fullName: "Ama Osei",
-    phoneNumber: "+233242345678",
-    category: "water_sanitation",
-    district: "assembly_a",
-    description: "No water supply in Community 5 for 3 days",
-    status: "escalated",
-    assignedToId: "admin-1",
-    createdById: "nav-a1",
-    escalatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    escalationReason: "Critical issue affecting 500+ households. Requires urgent attention.",
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-a003",
-    code: "GGA-A-003",
-    fullName: "Kofi Asante",
-    phoneNumber: "+233243456789",
-    category: "waste_management",
-    district: "assembly_a",
-    description: "Garbage not collected for 2 weeks at Community Center",
-    status: "pending",
-    createdById: "nav-a2",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-a004",
-    code: "GGA-A-004",
-    fullName: "Abena Owusu",
-    phoneNumber: "+233244567890",
-    category: "electricity_energy",
-    district: "assembly_a",
-    description: "Streetlights not working on Park Road for a month",
-    status: "resolved",
-    assignedToId: "officer-a2",
-    createdById: "nav-a1",
-    respondedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-a005",
-    code: "GGA-A-005",
-    fullName: "Yaw Boateng",
-    phoneNumber: "+233245678901",
-    category: "market_commerce",
-    district: "assembly_a",
-    description: "Market drainage blocked causing flooding during rain",
-    status: "in_progress",
-    assignedToId: "officer-a1",
-    createdById: "nav-a2",
-    expectedResolutionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    respondedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
-  // Assembly B Cases (Medium Volume - 23 cases)
-  {
-    id: "case-b001",
-    code: "GGA-B-001",
-    fullName: "Ekow Mensah",
-    phoneNumber: "+233246789012",
-    category: "healthcare_services",
-    district: "assembly_b",
-    description: "Clinic closed for 3 days without notice",
-    status: "resolved",
-    assignedToId: "officer-b1",
-    createdById: "nav-b1",
-    respondedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-b002",
-    code: "GGA-B-002",
-    fullName: "Afua Osei",
-    phoneNumber: "+233247890123",
-    category: "education_services",
-    district: "assembly_b",
-    description: "School building roof leaking badly",
-    status: "in_progress",
-    assignedToId: "officer-b2",
-    createdById: "nav-b1",
-    expectedResolutionDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    respondedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-b003",
-    code: "GGA-B-003",
-    fullName: "Kwabena Darko",
-    phoneNumber: "+233248901234",
-    category: "public_safety",
-    district: "assembly_b",
-    description: "Dangerous open gutter near school needs covering",
-    status: "pending",
-    createdById: "nav-b2",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-b004",
-    code: "GGA-B-004",
-    fullName: "Akosua Frimpong",
-    phoneNumber: "+233249012345",
-    category: "water_sanitation",
-    district: "assembly_b",
-    description: "Public toilet facility not functioning",
-    status: "rejected",
-    assignedToId: "officer-b1",
-    createdById: "nav-b1",
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  // Assembly C Cases (Low Volume - 12 cases)
-  {
-    id: "case-c001",
-    code: "GGA-C-001",
-    fullName: "Emmanuel Adjei",
-    phoneNumber: "+233240123456",
-    category: "environmental_issues",
-    district: "assembly_c",
-    description: "Illegal dumping site near residential area",
-    status: "in_progress",
-    assignedToId: "officer-c1",
-    createdById: "nav-c1",
-    expectedResolutionDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    respondedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-c002",
-    code: "GGA-C-002",
-    fullName: "Esi Quaye",
-    phoneNumber: "+233241234560",
-    category: "roads_infrastructure",
-    district: "assembly_c",
-    description: "Bridge requires repair after recent floods",
-    status: "resolved",
-    assignedToId: "officer-c1",
-    createdById: "nav-c1",
-    respondedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "case-c003",
-    code: "GGA-C-003",
-    fullName: "Kwesi Nkrumah",
-    phoneNumber: "+233242345671",
-    category: "electricity_energy",
-    district: "assembly_c",
-    description: "Frequent power outages in northern sector",
-    status: "pending",
-    createdById: "nav-c1",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-// Generate additional cases to reach target numbers
-const generateAdditionalCases = () => {
-  const categories = [
-    "roads_infrastructure",
-    "water_sanitation",
-    "electricity_energy",
-    "waste_management",
-    "healthcare_services",
-    "education_services",
-    "public_safety",
-    "market_commerce",
-    "environmental_issues",
-  ] as const;
-
-  const statuses = ["pending", "in_progress", "resolved", "rejected"] as const;
-
-  const descriptions: Record<string, string[]> = {
-    roads_infrastructure: [
-      "Road needs repair",
-      "Speed bumps needed",
-      "Road markings faded",
-      "Bridge maintenance required",
-    ],
-    water_sanitation: [
-      "Pipe burst in area",
-      "Water pressure too low",
-      "Drainage blocked",
-      "Sewer overflow issue",
-    ],
-    waste_management: [
-      "Bins overflowing",
-      "Collection schedule inconsistent",
-      "Illegal dumping reported",
-      "Need more waste bins",
-    ],
-    electricity_energy: [
-      "Power outage frequent",
-      "Transformer issues",
-      "Streetlights needed",
-      "Cable hanging dangerously",
-    ],
-    healthcare_services: [
-      "Clinic understaffed",
-      "Medicine shortage",
-      "Long wait times",
-      "Facility needs cleaning",
-    ],
-    education_services: [
-      "School needs desks",
-      "Classroom overcrowded",
-      "Library inadequate",
-      "Sports facilities poor",
-    ],
-    public_safety: [
-      "Crime rate increased",
-      "Street lighting poor",
-      "Security patrol needed",
-      "Emergency access blocked",
-    ],
-    market_commerce: [
-      "Market stalls damaged",
-      "Sanitation poor",
-      "Price exploitation",
-      "Access roads bad",
-    ],
-    environmental_issues: [
-      "Trees need trimming",
-      "Park needs maintenance",
-      "Pollution complaint",
-      "Noise levels high",
-    ],
-  };
-
-  let caseNumber = {
-    assembly_a: 6,
-    assembly_b: 5,
-    assembly_c: 4,
-  };
-
-  const targetCounts = {
-    assembly_a: 45,
-    assembly_b: 23,
-    assembly_c: 12,
-  };
-
-  for (const district of ["assembly_a", "assembly_b", "assembly_c"] as const) {
-    const currentCount = mockComplaints.filter(c => c.district === district).length;
-    const needCount = targetCounts[district] - currentCount;
-
-    for (let i = 0; i < needCount; i++) {
-      const category = categories[Math.floor(Math.random() * categories.length)];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const descList = descriptions[category];
-      const description = descList[Math.floor(Math.random() * descList.length)];
-
-      const navigators = mockUsers.filter(
-        u => u.role === "navigator" && u.district === district
-      );
-      const officers = mockUsers.filter(
-        u => u.role === "district_officer" && u.district === district
-      );
-
-      const createdBy = navigators[Math.floor(Math.random() * navigators.length)];
-      const assignedTo =
-        status !== "pending"
-          ? officers[Math.floor(Math.random() * officers.length)]
-          : undefined;
-
-      const daysAgo = Math.floor(Math.random() * 60) + 1;
-      const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
-
-      mockComplaints.push({
-        id: `case-${district.slice(-1)}${String(caseNumber[district]).padStart(3, "0")}`,
-        code: `GGA-${district.slice(-1).toUpperCase()}-${String(caseNumber[district]).padStart(3, "0")}`,
-        fullName: `Citizen ${caseNumber[district]}`,
-        phoneNumber: `+23324${Math.floor(Math.random() * 10000000)}`,
-        category,
-        district,
-        description,
-        status,
-        assignedToId: assignedTo?.id,
-        createdById: createdBy.id,
-        expectedResolutionDate:
-          status === "in_progress"
-            ? new Date(Date.now() + Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString()
-            : undefined,
-        respondedAt:
-          status !== "pending"
-            ? new Date(createdAt.getTime() + Math.random() * 2 * 24 * 60 * 60 * 1000).toISOString()
-            : undefined,
-        createdAt: createdAt.toISOString(),
-        updatedAt: new Date(
-          createdAt.getTime() + Math.random() * 5 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-      });
-
-      caseNumber[district]++;
-    }
-  }
+const locationCache: LocationCache = {
+  loaded: false,
+  byId: new Map(),
+  districtToLocationId: new Map(),
 };
 
-generateAdditionalCases();
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-// Generate additional mock data for analytics (60 more cases across 60 days)
-const generateAdditionalMockCases = (): ApiComplaint[] => {
-  const categories = [
-    "roads_infrastructure",
-    "water_sanitation",
-    "electricity_energy",
-    "waste_management",
-    "healthcare_services",
-    "education_services",
-    "public_safety",
-    "market_commerce",
-    "environmental_issues",
-  ];
-  const statuses: ("pending" | "in_progress" | "resolved" | "rejected" | "escalated")[] = [
-    "pending",
-    "in_progress",
-    "resolved",
-    "rejected",
-    "escalated",
-  ];
-  const districts: ("assembly_a" | "assembly_b" | "assembly_c")[] = [
-    "assembly_a",
-    "assembly_b",
-    "assembly_c",
-  ];
-  const navigatorIds = ["nav-a1", "nav-a2", "nav-b1", "nav-b2", "nav-c1"];
-  const officerIds = ["officer-a1", "officer-a2", "officer-b1", "officer-b2", "officer-c1"];
+const DISTRICT_FALLBACKS = ["assembly_a", "assembly_b", "assembly_c"];
 
-  const additionalCases: ApiComplaint[] = [];
+function toBackendRole(role: FrontendRole): BackendRole {
+  if (role === "admin") return "ADMIN";
+  if (role === "navigator") return "FIELD_AGENT";
+  return "STAFF_OFFICER";
+}
 
-  for (let i = 0; i < 60; i++) {
-    const daysAgo = 60 - i; // Spread cases across 60 days
-    const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
-    const category = categories[i % categories.length];
-    const district = districts[i % districts.length];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const navigatorId = navigatorIds[i % navigatorIds.length];
-    const officerId = status !== "pending" ? officerIds[i % officerIds.length] : undefined;
+function fromBackendRole(role: string): FrontendRole {
+  if (role === "ADMIN") return "admin";
+  if (role === "FIELD_AGENT") return "navigator";
+  return "district_officer";
+}
 
-    // Generate response time (1-72 hours for responded cases)
-    const responseHours = Math.floor(Math.random() * 72) + 1;
-    const respondedAt =
-      status !== "pending"
-        ? new Date(createdAt.getTime() + responseHours * 60 * 60 * 1000)
-        : undefined;
+function toBackendStatus(status: FrontendStatus): BackendStatus {
+  if (status === "pending") return "RECEIVED";
+  if (status === "in_progress") return "IN_PROGRESS";
+  if (status === "resolved") return "RESOLVED";
+  if (status === "rejected") return "CLOSED_WITH_REASONS";
+  return "ESCALATED";
+}
 
-    // Generate resolution time (3-30 days for resolved cases)
-    const resolutionDays = Math.floor(Math.random() * 28) + 3;
-    const resolvedAt =
-      status === "resolved"
-        ? new Date(createdAt.getTime() + resolutionDays * 24 * 60 * 60 * 1000)
-        : new Date(Date.now() - Math.floor(Math.random() * 24) * 60 * 60 * 1000);
+function fromBackendStatus(status?: string): FrontendStatus {
+  if (status === "RESOLVED") return "resolved";
+  if (status === "ESCALATED") return "escalated";
+  if (status === "CLOSED_WITH_REASONS") return "rejected";
+  if (status === "IN_PROGRESS" || status === "ASSIGNED") return "in_progress";
+  return "pending";
+}
 
-    // Generate escalation date (5-15 days after creation for escalated)
-    const escalationDays = Math.floor(Math.random() * 10) + 5;
-    const escalatedAt =
-      status === "escalated"
-        ? new Date(createdAt.getTime() + escalationDays * 24 * 60 * 60 * 1000)
-        : undefined;
+function toBackendCategory(category: string): BackendCategory {
+  return category.toUpperCase() as BackendCategory;
+}
 
-    additionalCases.push({
-      id: `case-gen-${i + 1}`,
-      code: `GGA-G-${String(i + 1).padStart(3, "0")}`,
-      fullName: `Citizen ${i + 1}`,
-      phoneNumber: `+23324${String(i).padStart(7, "0")}`,
-      category: category as any,
-      district: district,
-      description: `Generated case for ${category.replace(/_/g, " ")}`,
-      status: status,
-      assignedToId: officerId,
-      createdById: navigatorId,
-      respondedAt: respondedAt?.toISOString(),
-      escalatedAt: escalatedAt?.toISOString(),
-      escalationReason:
-        status === "escalated" ? "Requires higher level attention" : undefined,
-      createdAt: createdAt.toISOString(),
-      updatedAt: resolvedAt.toISOString(),
+function fromBackendCategory(category?: string): FrontendCategory {
+  return (category?.toLowerCase() ?? "other") as FrontendCategory;
+}
+
+function normalizeLabel(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+}
+
+function getDistrictFromLocation(locationId?: string): string {
+  if (!locationId) return "assembly_a";
+  const location = locationCache.byId.get(locationId);
+  if (!location) return "assembly_a";
+  const byName = normalizeLabel(location.name);
+  if (byName.includes("assembly_a") || byName.includes("assembly_a")) return "assembly_a";
+  if (byName.includes("assembly_b")) return "assembly_b";
+  if (byName.includes("assembly_c")) return "assembly_c";
+  return byName;
+}
+
+async function request<T>(
+  path: string,
+  options?: {
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+    token?: string;
+    query?: Record<string, string | number | boolean | undefined>;
+    body?: unknown;
+    isFormData?: boolean;
+  }
+): Promise<T> {
+  const method = options?.method ?? "GET";
+  const url = new URL(`${API_BASE_URL}${path}`);
+
+  if (options?.query) {
+    Object.entries(options.query).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") return;
+      url.searchParams.set(key, String(value));
     });
   }
 
-  return additionalCases;
-};
+  const headers: Record<string, string> = {};
+  if (options?.token) {
+    headers.Authorization = `Bearer ${options.token}`;
+  }
+  if (!options?.isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
-// Add generated cases to mock complaints
-mockComplaints = [...mockComplaints, ...generateAdditionalMockCases()];
+  const response = await fetch(url.toString(), {
+    method,
+    headers,
+    body: options?.body
+      ? options.isFormData
+        ? (options.body as BodyInit)
+        : JSON.stringify(options.body)
+      : undefined,
+  });
 
-// Hydrate user references
-mockComplaints = mockComplaints.map((complaint) => {
-  const assignedTo = complaint.assignedToId
-    ? mockUsers.find((u) => u.id === complaint.assignedToId)
-    : undefined;
-  const createdBy = complaint.createdById
-    ? mockUsers.find((u) => u.id === complaint.createdById)
-    : undefined;
-  return { ...complaint, assignedTo, createdBy };
-});
+  const text = await response.text();
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      payload = null;
+    }
+  }
 
-// ============================================================================
-// MOCK API FUNCTIONS
-// ============================================================================
+  if (!response.ok) {
+    const errorPayload = payload as ApiErrorPayload | null;
+    throw new ApiError(
+      errorPayload?.message ?? `Request failed with status ${response.status}`,
+      errorPayload?.statusCode ?? response.status,
+      errorPayload?.data
+    );
+  }
 
-// Simulate network delay
-const delay = (ms: number = 500) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+  return payload as T;
+}
 
-// Helper function to convert category code to readable label
-const getCategoryLabel = (category: string): string => {
-  return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-};
+function unwrapData<T>(payload: unknown): T {
+  if (payload && typeof payload === "object" && "data" in (payload as object)) {
+    return (payload as RawApiSuccess<T>).data as T;
+  }
+  return payload as T;
+}
+
+function unwrapPaginated<T>(payload: unknown): { rows: T[]; total: number; page: number; pageSize: number } {
+  const data = unwrapData<RawPaginated<T>>(payload);
+  const rows = data?.rows ?? [];
+  return {
+    rows,
+    total: data?.meta?.total ?? rows.length,
+    page: data?.meta?.page ?? 1,
+    pageSize: data?.meta?.pageSize ?? rows.length,
+  };
+}
+
+function mapUser(raw: RawUser): ApiUser {
+  return {
+    id: raw.id,
+    email: raw.email,
+    fullName: raw.fullName,
+    role: fromBackendRole(raw.role),
+    district: raw.locationId ? getDistrictFromLocation(raw.locationId) : null,
+    locationId: raw.locationId ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+function mapCase(raw: RawCase): ApiComplaint {
+  return {
+    id: raw.id,
+    code: raw.code,
+    fullName: raw.fullName,
+    phoneNumber: raw.phoneNumber ?? "",
+    category: fromBackendCategory(raw.category),
+    otherCategory: raw.otherCategory ?? null,
+    district: getDistrictFromLocation(raw.locationId),
+    description: raw.description,
+    status: fromBackendStatus(raw.status),
+    assignedToId: raw.assignedToId ?? null,
+    assignedTo: raw.assignedTo ? mapUser(raw.assignedTo) : undefined,
+    createdById: raw.createdById ?? null,
+    createdBy: raw.createdBy ? mapUser(raw.createdBy) : undefined,
+    expectedResolutionDate: raw.expectedResolutionDate ?? null,
+    respondedAt: raw.respondedAt ?? null,
+    escalatedAt: raw.escalatedAt ?? null,
+    escalationReason: raw.escalationReason ?? null,
+    attachmentUrl: raw.attachmentUrl,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    locationId: raw.locationId,
+  };
+}
+
+async function ensureLocationCache(token?: string) {
+  if (locationCache.loaded) return;
+  const payload = await request<RawPaginated<RawLocation> | RawApiSuccess<RawPaginated<RawLocation>>>(
+    "/locations",
+    { token, query: { page: 1, pageSize: 100 } }
+  );
+  const page = unwrapPaginated<RawLocation>(payload);
+  page.rows.forEach((location, index) => {
+    locationCache.byId.set(location.id, location);
+    const normalized = normalizeLabel(location.name);
+    locationCache.districtToLocationId.set(normalized, location.id);
+    if (index < DISTRICT_FALLBACKS.length) {
+      locationCache.districtToLocationId.set(DISTRICT_FALLBACKS[index], location.id);
+    }
+  });
+  locationCache.loaded = true;
+}
+
+async function resolveLocationId(input?: string, token?: string): Promise<string | undefined> {
+  if (!input) return undefined;
+  if (UUID_REGEX.test(input)) return input;
+  await ensureLocationCache(token);
+  const normalized = normalizeLabel(input);
+  return locationCache.districtToLocationId.get(normalized);
+}
 
 export async function loginUser(input: {
   email: string;
   password: string;
 }): Promise<AuthResponse> {
-  await delay();
-
-  const user = mockUsers.find((u) => u.email === input.email);
-  if (!user) {
-    throw new ApiError("Invalid credentials", 401);
+  try {
+    await ensureLocationCache();
+  } catch {
+    // Non-blocking for auth; location mapping can be resolved lazily later.
   }
-
+  const payload = await request<RawApiSuccess<{ accessToken: string; user: RawUser }>>(
+    "/auth/login",
+    {
+      method: "POST",
+      body: input,
+    }
+  );
+  const data = unwrapData<{ accessToken: string; user: RawUser }>(payload);
   return {
-    user,
-    accessToken: `mock-token-${user.id}`,
+    accessToken: data.accessToken,
+    user: mapUser(data.user),
   };
 }
 
@@ -649,103 +415,79 @@ export async function registerUser(input: {
   email: string;
   password: string;
   fullName: string;
-  role?: "district_officer" | "admin" | "navigator";
-  district?: "assembly_a" | "assembly_b" | "assembly_c";
+  role?: FrontendRole;
+  district?: string;
 }): Promise<AuthResponse> {
-  await delay();
+  const locationId = await resolveLocationId(input.district);
+  await request("/auth/register", {
+    method: "POST",
+    body: {
+      email: input.email,
+      password: input.password,
+      fullName: input.fullName,
+      role: toBackendRole(input.role ?? "navigator"),
+      locationId,
+    },
+  });
 
-  const existingUser = mockUsers.find((u) => u.email === input.email);
-  if (existingUser) {
-    throw new ApiError("Email already exists", 400);
-  }
-
-  const newUser: ApiUser = {
-    id: `user-${Date.now()}`,
-    email: input.email,
-    fullName: input.fullName,
-    role: input.role || "navigator",
-    district: input.district || null,
-  };
-
-  mockUsers.push(newUser);
-
-  return {
-    user: newUser,
-    accessToken: `mock-token-${newUser.id}`,
-  };
+  return loginUser({ email: input.email, password: input.password });
 }
 
 export async function getProfile(token: string): Promise<ApiUser> {
-  await delay();
-
-  const userId = token.replace("mock-token-", "");
-  const user = mockUsers.find((u) => u.id === userId);
-
-  if (!user) {
-    throw new ApiError("Unauthorized", 401);
-  }
-
-  return user;
+  await ensureLocationCache(token);
+  const payload = await request<RawApiSuccess<RawUser>>("/auth/profile", { token });
+  return mapUser(unwrapData<RawUser>(payload));
 }
 
 export async function getComplaints(
   token: string,
   options?: { district?: string; page?: number; pageSize?: number }
-): Promise<{
-  rows: ApiComplaint[];
-  total: number;
-  page: number;
-  pageSize: number;
-}> {
-  await delay();
-
-  let filtered = [...mockComplaints];
-
-  if (options?.district) {
-    filtered = filtered.filter((c) => c.district === options.district);
-  }
-
-  // Sort by most recent first
-  filtered.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+): Promise<{ rows: ApiComplaint[]; total: number; page: number; pageSize: number }> {
+  await ensureLocationCache(token);
+  const locationId = await resolveLocationId(options?.district, token);
+  const payload = await request<RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>>(
+    "/cases",
+    {
+      token,
+      query: {
+        locationId,
+        page: options?.page ?? 1,
+        pageSize: options?.pageSize ?? 10,
+      },
+    }
   );
-
-  const page = options?.page || 1;
-  const pageSize = options?.pageSize || 10;
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-
+  const page = unwrapPaginated<RawCase>(payload);
   return {
-    rows: filtered.slice(start, end),
-    total: filtered.length,
-    page,
-    pageSize,
+    rows: page.rows.map(mapCase),
+    total: page.total,
+    page: page.page,
+    pageSize: page.pageSize,
   };
 }
 
-export async function getComplaint(
-  token: string,
-  id: string
-): Promise<ApiComplaint> {
-  await delay();
+export async function getComplaint(token: string, id: string): Promise<ApiComplaint> {
+  await ensureLocationCache(token);
+  const payload = await request<RawApiSuccess<RawCase>>(`/cases/${id}`, { token });
+  return mapCase(unwrapData<RawCase>(payload));
+}
 
-  const complaint = mockComplaints.find((c) => c.id === id);
-  if (!complaint) {
-    throw new ApiError("Complaint not found", 404);
-  }
-
-  return complaint;
+export async function getComplaintByCode(code: string): Promise<ApiComplaint> {
+  await ensureLocationCache();
+  const payload = await request<RawApiSuccess<RawCase>>(`/cases/code/${encodeURIComponent(code)}`);
+  return mapCase(unwrapData<RawCase>(payload));
 }
 
 export async function getUser(token: string, id: string): Promise<ApiUser> {
-  await delay();
-
-  const user = mockUsers.find((u) => u.id === id);
-  if (!user) {
+  const users = await request<RawPaginated<RawUser>>("/users", {
+    token,
+    query: { page: 1, pageSize: 100, query: id },
+  });
+  const found = (users.rows ?? []).find((user) => user.id === id);
+  if (!found) {
     throw new ApiError("User not found", 404);
   }
-
-  return user;
+  await ensureLocationCache(token);
+  return mapUser(found);
 }
 
 export async function submitComplaint(
@@ -758,44 +500,23 @@ export async function submitComplaint(
     description?: string;
   }
 ): Promise<{ code: string }> {
-  await delay();
-
-  const userId = token.replace("mock-token-", "");
-  let user = mockUsers.find((u) => u.id === userId);
-
-  // Allow public submissions (citizen portal)
-  if (!user && userId === "public") {
-    user = mockUsers.find((u) => u.id === "public");
+  const locationId = await resolveLocationId(input.district, token);
+  if (!locationId) {
+    throw new ApiError("No locations are configured yet. Please create at least one location.", 400);
   }
-
-  if (!user) {
-    throw new ApiError("Unauthorized", 401);
-  }
-
-  const district = input.district as "assembly_a" | "assembly_b" | "assembly_c";
-  const districtLetter = district.slice(-1).toUpperCase();
-  const districtCases = mockComplaints.filter((c) => c.district === district);
-  const nextNumber = districtCases.length + 1;
-  const code = `GGA-${districtLetter}-${String(nextNumber).padStart(3, "0")}`;
-
-  const newComplaint: ApiComplaint = {
-    id: `case-${Date.now()}`,
-    code,
-    phoneNumber: input.phoneNumber,
-    category: input.category as ApiComplaint["category"],
-    otherCategory: input.otherCategory,
-    district,
-    description: input.description,
-    status: "pending",
-    createdById: user.id,
-    createdBy: user,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  mockComplaints.unshift(newComplaint);
-
-  return { code };
+  const payload = await request<RawApiSuccess<RawCase>>("/cases/citizen", {
+    method: "POST",
+    token: undefined,
+    body: {
+      phoneNumber: input.phoneNumber,
+      locationId,
+      category: toBackendCategory(input.category),
+      otherCategory: input.otherCategory,
+      description: input.description,
+    },
+  });
+  const created = unwrapData<RawCase>(payload);
+  return { code: created.code };
 }
 
 export async function submitComplaintByNavigator(
@@ -820,166 +541,102 @@ export async function submitComplaintByNavigator(
   },
   options?: { code?: string }
 ): Promise<{ code: string }> {
-  await delay();
-
-  const userId = token.replace("mock-token-", "");
-  const user = mockUsers.find((u) => u.id === userId);
-
-  if (!user) {
-    throw new ApiError("Unauthorized", 401);
+  void options;
+  const locationId = await resolveLocationId(input.district, token);
+  if (!locationId) {
+    throw new ApiError("No locations are configured yet. Please create at least one location.", 400);
   }
-
-  const district = input.district as "assembly_a" | "assembly_b" | "assembly_c";
-  const districtLetter = district.slice(-1).toUpperCase();
-  const districtCases = mockComplaints.filter((c) => c.district === district);
-  const nextNumber = districtCases.length + 1;
-  const code = options?.code || `GGA-${districtLetter}-${String(nextNumber).padStart(3, "0")}`;
-
-  const newComplaint: ApiComplaint = {
-    id: `case-${Date.now()}`,
-    code,
-    fullName: input.fullName,
-    age: input.age,
-    gender: input.gender,
-    phoneNumber: input.phoneNumber,
-    caregiverPhoneNumber: input.caregiverPhoneNumber,
-    language: input.language,
-    category: input.category as ApiComplaint["category"],
-    otherCategory: input.otherCategory,
-    issueTypes: input.issueTypes,
-    otherIssueType: input.otherIssueType,
-    requestType: input.requestType,
-    otherRequest: input.otherRequest,
-    district,
-    description: input.description,
-    status: "pending",
-    createdById: user.id,
-    createdBy: user,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  mockComplaints.unshift(newComplaint);
-
-  return { code };
+  const payload = await request<RawApiSuccess<RawCase>>("/cases/portal", {
+    method: "POST",
+    token,
+    body: {
+      fullName: input.fullName,
+      phoneNumber: input.phoneNumber,
+      locationId,
+      category: toBackendCategory(input.category),
+      otherCategory: input.otherCategory,
+      description: input.description,
+      channel: "PORTAL",
+    },
+  });
+  const created = unwrapData<RawCase>(payload);
+  return { code: created.code };
 }
 
-export async function getNavigators(token: string): Promise<{
-  rows: ApiUser[];
-}> {
-  await delay();
-
-  const navigators = mockUsers.filter((u) => u.role === "navigator");
-  return { rows: navigators };
+export async function getNavigators(token: string): Promise<{ rows: ApiUser[] }> {
+  await ensureLocationCache(token);
+  const payload = await request<RawPaginated<RawUser>>("/users", {
+    token,
+    query: { role: "FIELD_AGENT", page: 1, pageSize: 100 },
+  });
+  return { rows: (payload.rows ?? []).map(mapUser) };
 }
 
 export async function getDistrictOfficers(
   token: string,
   district?: string
-): Promise<{
-  rows: ApiUser[];
-}> {
-  await delay();
-
-  let officers = mockUsers.filter((u) => u.role === "district_officer");
-
-  if (district) {
-    officers = officers.filter((u) => u.district === district);
-  }
-
-  return { rows: officers };
+): Promise<{ rows: ApiUser[] }> {
+  await ensureLocationCache(token);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawPaginated<RawUser>>("/users", {
+    token,
+    query: { role: "STAFF_OFFICER", locationId, page: 1, pageSize: 100 },
+  });
+  return { rows: (payload.rows ?? []).map(mapUser) };
 }
 
-export async function getAdmins(token: string): Promise<{
-  rows: ApiUser[];
-}> {
-  await delay();
-
-  const admins = mockUsers.filter((u) => u.role === "admin");
-  return { rows: admins };
+export async function getAdmins(token: string): Promise<{ rows: ApiUser[] }> {
+  await ensureLocationCache(token);
+  const payload = await request<RawPaginated<RawUser>>("/users", {
+    token,
+    query: { role: "ADMIN", page: 1, pageSize: 100 },
+  });
+  return { rows: (payload.rows ?? []).map(mapUser) };
 }
 
 export async function assignComplaint(
   token: string,
   complaintId: string,
-  input: {
-    assignedToId: string;
-    expectedResolutionDate?: string;
-  }
+  input: { assignedToId: string; expectedResolutionDate?: string }
 ): Promise<ApiComplaint> {
-  await delay();
-
-  const complaintIndex = mockComplaints.findIndex((c) => c.id === complaintId);
-  if (complaintIndex === -1) {
-    throw new ApiError("Complaint not found", 404);
-  }
-
-  const assignedTo = mockUsers.find((u) => u.id === input.assignedToId);
-
-  mockComplaints[complaintIndex] = {
-    ...mockComplaints[complaintIndex],
-    assignedToId: input.assignedToId,
-    assignedTo,
-    expectedResolutionDate: input.expectedResolutionDate,
-    status: "in_progress",
-    respondedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  return mockComplaints[complaintIndex];
+  const payload = await request<RawApiSuccess<RawCase>>(`/cases/${complaintId}/assign`, {
+    method: "PATCH",
+    token,
+    body: input,
+  });
+  return mapCase(unwrapData<RawCase>(payload));
 }
 
 export async function escalateComplaint(
   token: string,
   complaintId: string,
-  input: {
-    assignedToId: string;
-    escalationReason: string;
-  }
+  input: { assignedToId: string; escalationReason: string }
 ): Promise<ApiComplaint> {
-  await delay();
-
-  const complaintIndex = mockComplaints.findIndex((c) => c.id === complaintId);
-  if (complaintIndex === -1) {
-    throw new ApiError("Complaint not found", 404);
-  }
-
-  const assignedTo = mockUsers.find((u) => u.id === input.assignedToId);
-
-  mockComplaints[complaintIndex] = {
-    ...mockComplaints[complaintIndex],
-    assignedToId: input.assignedToId,
-    assignedTo,
-    escalationReason: input.escalationReason,
-    status: "escalated",
-    escalatedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  return mockComplaints[complaintIndex];
+  const payload = await request<RawApiSuccess<RawCase>>(`/cases/${complaintId}/escalate`, {
+    method: "PATCH",
+    token,
+    body: input,
+  });
+  return mapCase(unwrapData<RawCase>(payload));
 }
 
 export async function updateComplaintStatus(
   token: string,
   complaintId: string,
-  input: {
-    status: "pending" | "in_progress" | "resolved" | "rejected" | "escalated";
-  }
+  input: { status: FrontendStatus }
 ): Promise<ApiComplaint> {
-  await delay();
-
-  const complaintIndex = mockComplaints.findIndex((c) => c.id === complaintId);
-  if (complaintIndex === -1) {
-    throw new ApiError("Complaint not found", 404);
-  }
-
-  mockComplaints[complaintIndex] = {
-    ...mockComplaints[complaintIndex],
-    status: input.status,
-    updatedAt: new Date().toISOString(),
+  const body: { status: BackendStatus; closureReason?: string } = {
+    status: toBackendStatus(input.status),
   };
-
-  return mockComplaints[complaintIndex];
+  if (input.status === "rejected") {
+    body.closureReason = "Closed with reasons";
+  }
+  const payload = await request<RawApiSuccess<RawCase>>(`/cases/${complaintId}/status`, {
+    method: "PATCH",
+    token,
+    body,
+  });
+  return mapCase(unwrapData<RawCase>(payload));
 }
 
 export interface ComplaintStats {
@@ -1004,90 +661,12 @@ export async function getComplaintStats(
   token: string,
   options?: { district?: string }
 ): Promise<ComplaintStatsWithTrends> {
-  await delay();
-
-  let cases = mockComplaints;
-
-  if (options?.district) {
-    cases = cases.filter((c) => c.district === options.district);
-  }
-
-  // Current week calculations
-  const activeCases = cases.filter((c) =>
-    ["pending", "in_progress", "escalated"].includes(c.status)
-  ).length;
-
-  const resolvedCases = cases.filter((c) => c.status === "resolved").length;
-  const totalCases = cases.length;
-  const resolutionRate = totalCases > 0 ? (resolvedCases / totalCases) * 100 : 0;
-
-  // Calculate average response time
-  const respondedCases = cases.filter((c) => c.respondedAt);
-  const totalResponseTime = respondedCases.reduce((sum, c) => {
-    const created = new Date(c.createdAt).getTime();
-    const responded = new Date(c.respondedAt!).getTime();
-    return sum + (responded - created);
-  }, 0);
-  const avgResponseHours =
-    respondedCases.length > 0
-      ? totalResponseTime / respondedCases.length / (1000 * 60 * 60)
-      : 0;
-
-  // Calculate overdue cases (pending for more than 7 days)
-  const overdueCases = cases.filter((c) => {
-    if (c.status !== "pending") return false;
-    const created = new Date(c.createdAt).getTime();
-    const now = Date.now();
-    const daysOld = (now - created) / (1000 * 60 * 60 * 24);
-    return daysOld > 7;
-  }).length;
-
-  // Last week calculations (cases created/updated 7-14 days ago)
-  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-
-  const lastWeekCases = cases.filter((c) => {
-    const created = new Date(c.createdAt).getTime();
-    return created >= twoWeeksAgo && created < oneWeekAgo;
+  const locationId = await resolveLocationId(options?.district, token);
+  const payload = await request<RawApiSuccess<ComplaintStatsWithTrends>>("/analytics/stats", {
+    token,
+    query: { locationId },
   });
-
-  const lastWeekActiveCases = lastWeekCases.filter((c) =>
-    ["pending", "in_progress", "escalated"].includes(c.status)
-  ).length;
-
-  const lastWeekResolvedCases = lastWeekCases.filter((c) => c.status === "resolved").length;
-  const lastWeekTotalCases = lastWeekCases.length;
-  const lastWeekResolutionRate =
-    lastWeekTotalCases > 0 ? (lastWeekResolvedCases / lastWeekTotalCases) * 100 : 0;
-
-  const lastWeekRespondedCases = lastWeekCases.filter((c) => c.respondedAt);
-  const lastWeekTotalResponseTime = lastWeekRespondedCases.reduce((sum, c) => {
-    const created = new Date(c.createdAt).getTime();
-    const responded = new Date(c.respondedAt!).getTime();
-    return sum + (responded - created);
-  }, 0);
-  const lastWeekAvgResponseHours =
-    lastWeekRespondedCases.length > 0
-      ? lastWeekTotalResponseTime / lastWeekRespondedCases.length / (1000 * 60 * 60)
-      : 0;
-
-  const lastWeekOverdueCases = lastWeekCases.filter((c) => {
-    if (c.status !== "pending") return false;
-    const created = new Date(c.createdAt).getTime();
-    const daysOld = (Date.now() - created) / (1000 * 60 * 60 * 24);
-    return daysOld > 7;
-  }).length;
-
-  return {
-    activeCases,
-    avgResponseHours: Math.round(avgResponseHours * 10) / 10,
-    resolutionRate: Math.round(resolutionRate * 10) / 10,
-    overdueCases,
-    activeCasesChange: activeCases - lastWeekActiveCases,
-    avgResponseHoursChange: Math.round((avgResponseHours - lastWeekAvgResponseHours) * 10) / 10,
-    resolutionRateChange: Math.round((resolutionRate - lastWeekResolutionRate) * 10) / 10,
-    overdueCasesChange: overdueCases - lastWeekOverdueCases,
-  };
+  return unwrapData<ComplaintStatsWithTrends>(payload);
 }
 
 export interface NavigatorUpdate {
@@ -1103,124 +682,107 @@ export interface NavigatorUpdate {
 
 export async function getNavigatorUpdates(
   token: string,
-  options?: {
-    district?: string;
-    page?: number;
-    pageSize?: number;
-  }
+  options?: { district?: string; page?: number; pageSize?: number }
 ): Promise<NavigatorUpdate[]> {
-  await delay();
+  const locationId = await resolveLocationId(options?.district, token);
+  const payload = await request<RawPaginated<{
+    id: string;
+    caseId: string;
+    caseCode: string;
+    agentName: string;
+    agentEmail: string;
+    oldStatus: string;
+    newStatus: string;
+    updatedAt: string;
+  }>>("/analytics/recent-activity", {
+    token,
+    query: {
+      locationId,
+      page: options?.page ?? 1,
+      pageSize: options?.pageSize ?? 10,
+    },
+  });
 
-  let cases = mockComplaints;
-
-  if (options?.district) {
-    cases = cases.filter((c) => c.district === options.district);
-  }
-
-  // Get recent updates (cases updated in last 7 days)
-  const recentUpdates = cases
-    .filter((c) => {
-      const updated = new Date(c.updatedAt).getTime();
-      const now = Date.now();
-      const daysAgo = (now - updated) / (1000 * 60 * 60 * 24);
-      return daysAgo <= 7;
-    })
-    .slice(0, options?.pageSize || 10);
-
-  return recentUpdates.map((c) => ({
-    id: `update-${c.id}`,
-    complaintId: c.id,
-    complaintTitle: `Case ${c.code}`,
-    navigatorName: c.createdBy?.fullName || "Unknown",
-    navigatorEmail: c.createdBy?.email || "",
-    oldStatus: "pending",
-    newStatus: c.status,
-    updatedAt: c.updatedAt,
+  return (payload.rows ?? []).map((item) => ({
+    id: item.id,
+    complaintId: item.caseId,
+    complaintTitle: `Case ${item.caseCode}`,
+    navigatorName: item.agentName,
+    navigatorEmail: item.agentEmail,
+    oldStatus: fromBackendStatus(item.oldStatus),
+    newStatus: fromBackendStatus(item.newStatus),
+    updatedAt: item.updatedAt,
   }));
 }
 
-export async function getOverdueComplaints(
-  token: string
-): Promise<ApiComplaint[]> {
-  await delay();
-
-  const overdue = mockComplaints.filter((c) => {
-    if (c.status !== "pending" && c.status !== "in_progress") return false;
-    const created = new Date(c.createdAt).getTime();
-    const now = Date.now();
-    const daysOld = (now - created) / (1000 * 60 * 60 * 24);
-    return daysOld > 7;
-  });
-
-  return overdue;
+export async function getOverdueComplaints(token: string): Promise<ApiComplaint[]> {
+  const payload = await request<RawApiSuccess<RawCase[]>>("/analytics/overdue-cases", { token });
+  return (unwrapData<RawCase[]>(payload) ?? []).map(mapCase);
 }
 
-// Analytics & Chart Data Functions
 export async function getCasesByAssembly(
   token: string
 ): Promise<{ assembly: string; total: number; pending: number; inProgress: number; resolved: number; rejected: number }[]> {
-  await delay(200);
+  const payload = await request<RawApiSuccess<Array<{
+    location: string;
+    total: number;
+    received: number;
+    assigned: number;
+    inProgress: number;
+    resolved: number;
+    closedWithReasons: number;
+    escalated: number;
+  }>>>("/analytics/cases-by-location", { token });
 
-  const assemblies = ["assembly_a", "assembly_b", "assembly_c"];
-  
-  return assemblies.map((assembly) => {
-    const cases = mockComplaints.filter((c) => c.district === assembly);
-    return {
-      assembly: assembly === "assembly_a" ? "Assembly A" : assembly === "assembly_b" ? "Assembly B" : "Assembly C",
-      total: cases.length,
-      pending: cases.filter((c) => c.status === "pending").length,
-      inProgress: cases.filter((c) => c.status === "in_progress").length,
-      resolved: cases.filter((c) => c.status === "resolved").length,
-      rejected: cases.filter((c) => c.status === "rejected").length,
-    };
-  });
+  const rows = unwrapData<Array<{
+    location: string;
+    total: number;
+    received: number;
+    assigned: number;
+    inProgress: number;
+    resolved: number;
+    closedWithReasons: number;
+    escalated: number;
+  }>>(payload);
+  return (rows ?? []).map((row) => ({
+    assembly: row.location,
+    total: row.total,
+    pending: row.received,
+    inProgress: row.assigned + row.inProgress,
+    resolved: row.resolved,
+    rejected: row.closedWithReasons,
+  }));
 }
 
 export async function getCasesByCategory(
   token: string,
   district?: string
 ): Promise<{ category: string; count: number }[]> {
-  await delay(200);
-
-  let cases = mockComplaints;
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  const categoryMap: Record<string, number> = {};
-  cases.forEach((c) => {
-    const categoryLabel = c.category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-    categoryMap[categoryLabel] = (categoryMap[categoryLabel] || 0) + 1;
-  });
-
-  return Object.entries(categoryMap)
-    .map(([category, count]) => ({ category, count }))
-    .sort((a, b) => b.count - a.count);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{ category: string; count: number }>>>(
+    "/analytics/cases-by-category",
+    { token, query: { locationId } }
+  );
+  return unwrapData(payload) ?? [];
 }
 
 export async function getCasesByStatus(
   token: string,
   district?: string
 ): Promise<{ status: string; count: number; percentage: number }[]> {
-  await delay(200);
-
-  let cases = mockComplaints;
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  const total = cases.length;
-  const statusMap: Record<string, number> = {};
-  
-  cases.forEach((c) => {
-    const statusLabel = c.status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-    statusMap[statusLabel] = (statusMap[statusLabel] || 0) + 1;
-  });
-
-  return Object.entries(statusMap).map(([status, count]) => ({
-    status,
-    count,
-    percentage: Math.round((count / total) * 100),
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{ status: string; count: number; percentage: number }>>>(
+    "/analytics/cases-by-status",
+    { token, query: { locationId } }
+  );
+  const rows = unwrapData<Array<{ status: string; count: number; percentage: number }>>(payload) ?? [];
+  return rows.map((row) => ({
+    ...row,
+    status: row.status
+      .toLowerCase()
+      .split("_")
+      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" "),
   }));
 }
 
@@ -1228,225 +790,115 @@ export async function getCasesTrend(
   token: string,
   district?: string
 ): Promise<{ date: string; submitted: number; resolved: number }[]> {
-  await delay(200);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{
+    day: string;
+    received: number;
+    resolved: number;
+  }>>>("/analytics/cases-trend", { token, query: { locationId } });
 
-  let cases = mockComplaints;
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  // Group by last 30 days
-  const last30Days = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    return date;
-  });
-
-  return last30Days.map((date) => {
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const submitted = cases.filter((c) => {
-      const created = new Date(c.createdAt);
-      return created >= dayStart && created <= dayEnd;
-    }).length;
-
-    const resolved = cases.filter((c) => {
-      if (c.status !== "resolved") return false;
-      const updated = new Date(c.updatedAt);
-      return updated >= dayStart && updated <= dayEnd;
-    }).length;
-
-    return {
-      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      submitted,
-      resolved,
-    };
-  });
+  const rows = unwrapData<Array<{ day: string; received: number; resolved: number }>>(payload);
+  return (rows ?? []).map((row) => ({
+    date: new Date(row.day).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    submitted: row.received,
+    resolved: row.resolved,
+  }));
 }
 
 export async function getAssemblyPerformance(
   token: string
 ): Promise<{ assembly: string; resolutionRate: number; avgResponseHours: number; activeCases: number }[]> {
-  await delay(200);
-
-  const assemblies = ["assembly_a", "assembly_b", "assembly_c"];
-
-  return assemblies.map((assembly) => {
-    const cases = mockComplaints.filter((c) => c.district === assembly);
-    const resolved = cases.filter((c) => c.status === "resolved").length;
-    const resolutionRate = cases.length > 0 ? Math.round((resolved / cases.length) * 100) : 0;
-
-    const respondedCases = cases.filter((c) => c.respondedAt);
-    const totalResponseTime = respondedCases.reduce((sum, c) => {
-      const created = new Date(c.createdAt).getTime();
-      const responded = new Date(c.respondedAt!).getTime();
-      return sum + (responded - created);
-    }, 0);
-    const avgResponseHours =
-      respondedCases.length > 0
-        ? Math.round((totalResponseTime / respondedCases.length / (1000 * 60 * 60)) * 10) / 10
-        : 0;
-
-    const activeCases = cases.filter((c) =>
-      ["pending", "in_progress", "escalated"].includes(c.status)
-    ).length;
-
-    return {
-      assembly: assembly === "assembly_a" ? "Assembly A" : assembly === "assembly_b" ? "Assembly B" : "Assembly C",
-      resolutionRate,
-      avgResponseHours,
-      activeCases,
-    };
-  });
+  const payload = await request<RawApiSuccess<Array<{
+    location: string;
+    resolutionRate: number;
+    avgResponseHours: number;
+    activeCases: number;
+  }>>>("/analytics/location-performance", { token });
+  const rows = unwrapData<Array<{
+    location: string;
+    resolutionRate: number;
+    avgResponseHours: number;
+    activeCases: number;
+  }>>(payload);
+  return (rows ?? []).map((row) => ({
+    assembly: row.location,
+    resolutionRate: row.resolutionRate,
+    avgResponseHours: row.avgResponseHours,
+    activeCases: row.activeCases,
+  }));
 }
 
-// Response Time Distribution - categorize cases by response time buckets
 export async function getResponseTimeDistribution(
   token: string,
   district?: string
 ): Promise<{ bucket: string; count: number }[]> {
-  await delay(200);
-
-  let cases = mockComplaints.filter((c) => c.respondedAt);
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  const buckets = {
-    "0-6h": 0,
-    "6-12h": 0,
-    "12-24h": 0,
-    "1-3d": 0,
-    "3-7d": 0,
-    "7d+": 0,
-  };
-
-  cases.forEach((c) => {
-    const created = new Date(c.createdAt).getTime();
-    const responded = new Date(c.respondedAt!).getTime();
-    const hours = (responded - created) / (1000 * 60 * 60);
-
-    if (hours <= 6) buckets["0-6h"]++;
-    else if (hours <= 12) buckets["6-12h"]++;
-    else if (hours <= 24) buckets["12-24h"]++;
-    else if (hours <= 72) buckets["1-3d"]++;
-    else if (hours <= 168) buckets["3-7d"]++;
-    else buckets["7d+"]++;
-  });
-
-  return Object.entries(buckets).map(([bucket, count]) => ({ bucket, count }));
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{ bucket: string; count: number }>>>(
+    "/analytics/response-time-distribution",
+    { token, query: { locationId } }
+  );
+  return unwrapData(payload) ?? [];
 }
 
-// Resolution Time by Category
 export async function getResolutionTimeByCategory(
   token: string,
   district?: string
 ): Promise<{ category: string; avgDays: number; count: number }[]> {
-  await delay(200);
-
-  let cases = mockComplaints.filter((c) => c.status === "resolved");
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  const categoryMap: Record<string, { totalTime: number; count: number }> = {};
-
-  cases.forEach((c) => {
-    const category = getCategoryLabel(c.category);
-    const created = new Date(c.createdAt).getTime();
-    const updated = new Date(c.updatedAt).getTime();
-    const days = (updated - created) / (1000 * 60 * 60 * 24);
-
-    if (!categoryMap[category]) {
-      categoryMap[category] = { totalTime: 0, count: 0 };
-    }
-    categoryMap[category].totalTime += days;
-    categoryMap[category].count++;
-  });
-
-  return Object.entries(categoryMap)
-    .map(([category, data]) => ({
-      category,
-      avgDays: Math.round((data.totalTime / data.count) * 10) / 10,
-      count: data.count,
-    }))
-    .sort((a, b) => b.avgDays - a.avgDays);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{ category: string; avgDays: number; count: number }>>>(
+    "/analytics/resolution-time-by-category",
+    { token, query: { locationId } }
+  );
+  return unwrapData(payload) ?? [];
 }
 
-// District Officer Performance
 export async function getDistrictOfficerPerformance(
   token: string
 ): Promise<{ name: string; totalCases: number; resolved: number; avgResponseHours: number; resolutionRate: number }[]> {
-  await delay(200);
-
-  const officers = mockUsers.filter((u) => u.role === "district_officer");
-
-  return officers.map((officer) => {
-    const cases = mockComplaints.filter((c) => c.assignedToId === officer.id);
-    const resolved = cases.filter((c) => c.status === "resolved").length;
-    const resolutionRate = cases.length > 0 ? Math.round((resolved / cases.length) * 100) : 0;
-
-    const respondedCases = cases.filter((c) => c.respondedAt);
-    const totalResponseTime = respondedCases.reduce((sum, c) => {
-      const created = new Date(c.createdAt).getTime();
-      const responded = new Date(c.respondedAt!).getTime();
-      return sum + (responded - created);
-    }, 0);
-    const avgResponseHours =
-      respondedCases.length > 0
-        ? Math.round((totalResponseTime / respondedCases.length / (1000 * 60 * 60)) * 10) / 10
-        : 0;
-
-    return {
-      name: officer.fullName,
-      totalCases: cases.length,
-      resolved,
-      avgResponseHours,
-      resolutionRate,
-    };
-  }).sort((a, b) => b.resolutionRate - a.resolutionRate);
+  const payload = await request<RawApiSuccess<Array<{
+    name: string;
+    totalCases: number;
+    resolved: number;
+    avgResponseHours: number;
+    resolutionRate: number;
+  }>>>("/analytics/officer-performance", { token });
+  return unwrapData(payload) ?? [];
 }
 
-// Weekly Activity Pattern - cases by day of week
 export async function getWeeklyActivityPattern(
   token: string,
   district?: string
 ): Promise<{ day: string; submitted: number; resolved: number }[]> {
-  await delay(200);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<RawApiSuccess<Array<{ day: string; received: number; resolved: number }>>>(
+    "/analytics/cases-trend",
+    { token, query: { locationId } }
+  );
+  const trend = unwrapData<Array<{ day: string; received: number; resolved: number }>>(payload) ?? [];
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const aggregate: Record<string, { submitted: number; resolved: number }> = {
+    Sun: { submitted: 0, resolved: 0 },
+    Mon: { submitted: 0, resolved: 0 },
+    Tue: { submitted: 0, resolved: 0 },
+    Wed: { submitted: 0, resolved: 0 },
+    Thu: { submitted: 0, resolved: 0 },
+    Fri: { submitted: 0, resolved: 0 },
+    Sat: { submitted: 0, resolved: 0 },
+  };
 
-  let cases = mockComplaints;
-  if (district) {
-    cases = cases.filter((c) => c.district === district);
-  }
-
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const dayMap: Record<string, { submitted: number; resolved: number }> = {};
-
-  days.forEach((day) => {
-    dayMap[day] = { submitted: 0, resolved: 0 };
+  trend.forEach((entry) => {
+    const date = new Date(entry.day);
+    const day = days[date.getDay()];
+    aggregate[day].submitted += entry.received;
+    aggregate[day].resolved += entry.resolved;
   });
 
-  cases.forEach((c) => {
-    const createdDay = days[new Date(c.createdAt).getDay()];
-    dayMap[createdDay].submitted++;
-
-    if (c.status === "resolved") {
-      const resolvedDay = days[new Date(c.updatedAt).getDay()];
-      dayMap[resolvedDay].resolved++;
-    }
-  });
-
-  return days.map((day) => ({
-    day: day.substring(0, 3), // Mon, Tue, etc.
-    submitted: dayMap[day].submitted,
-    resolved: dayMap[day].resolved,
-  }));
+  return days.map((day) => ({ day, ...aggregate[day] }));
 }
 
-// Escalation Analytics
 export async function getEscalationAnalytics(
   token: string,
   district?: string
@@ -1456,49 +908,59 @@ export async function getEscalationAnalytics(
   byCategory: { category: string; count: number; percentage: number }[];
   avgDaysBeforeEscalation: number;
 }> {
-  await delay(200);
+  const locationId = await resolveLocationId(district, token);
+  const payload = await request<
+    RawApiSuccess<{
+      totalEscalated: number;
+      escalationRate: number;
+      avgDaysBeforeEscalation: number;
+      byCategory: { category: string; count: number; percentage: number }[];
+    }>
+  >("/analytics/escalations", { token, query: { locationId } });
+  return unwrapData(payload);
+}
 
-  let allCases = mockComplaints;
-  if (district) {
-    allCases = allCases.filter((c) => c.district === district);
-  }
-
-  const escalatedCases = allCases.filter((c) => c.status === "escalated" || c.escalatedAt);
-  const escalationRate = allCases.length > 0 ? Math.round((escalatedCases.length / allCases.length) * 100) : 0;
-
-  // By category
-  const categoryMap: Record<string, number> = {};
-  escalatedCases.forEach((c) => {
-    const category = getCategoryLabel(c.category);
-    categoryMap[category] = (categoryMap[category] || 0) + 1;
+export async function getPublicStats(locationId?: string): Promise<{
+  totalCases: number;
+  resolved: number;
+  inProgress: number;
+  pending: number;
+  byCategory: { category: string; count: number }[];
+}> {
+  const payload = await request<
+    RawApiSuccess<{
+      totalCases: number;
+      resolved: number;
+      inProgress: number;
+      assigned: number;
+      received: number;
+      byCategory: { category: string; count: number }[];
+    }>
+  >("/public/stats", {
+    query: { locationId },
   });
-
-  const byCategory = Object.entries(categoryMap)
-    .map(([category, count]) => ({
-      category,
-      count,
-      percentage: Math.round((count / escalatedCases.length) * 100),
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  // Average days before escalation
-  const casesWithEscalationDate = escalatedCases.filter((c) => c.escalatedAt);
-  const totalDays = casesWithEscalationDate.reduce((sum, c) => {
-    const created = new Date(c.createdAt).getTime();
-    const escalated = new Date(c.escalatedAt!).getTime();
-    return sum + (escalated - created) / (1000 * 60 * 60 * 24);
-  }, 0);
-  const avgDaysBeforeEscalation =
-    casesWithEscalationDate.length > 0
-      ? Math.round((totalDays / casesWithEscalationDate.length) * 10) / 10
-      : 0;
-
+  const data = unwrapData<{
+    totalCases: number;
+    resolved: number;
+    inProgress: number;
+    assigned: number;
+    received: number;
+    byCategory: { category: string; count: number }[];
+  }>(payload);
   return {
-    totalEscalated: escalatedCases.length,
-    escalationRate,
-    byCategory,
-    avgDaysBeforeEscalation,
+    totalCases: data.totalCases,
+    resolved: data.resolved,
+    inProgress: (data.inProgress ?? 0) + (data.assigned ?? 0),
+    pending: data.received ?? 0,
+    byCategory: data.byCategory ?? [],
   };
+}
+
+export async function getLocations(): Promise<{ rows: RawLocation[] }> {
+  const payload = await request<RawPaginated<RawLocation>>("/locations", {
+    query: { page: 1, pageSize: 100 },
+  });
+  return { rows: payload.rows ?? [] };
 }
 
 export { ApiError };
