@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   loginUser as loginUserApi,
   registerUser as registerUserApi,
+  getLocations,
+  type ApiLocation,
 } from "@/lib/api";
 import { loadAuth, saveAuth } from "@/lib/storage";
 
@@ -23,7 +25,7 @@ const highlights = [
 const quickSteps = [
   {
     title: "1. Create an account",
-    copy: "Register as a navigator or admin to access the assembly portal.",
+    copy: "Register as a field agent, staff officer, or admin to access the operations portal.",
   },
   {
     title: "2. Capture reports",
@@ -44,10 +46,12 @@ export default function LandingPage() {
     email: "",
     password: "",
     role: "navigator" as "district_officer" | "admin" | "navigator",
-    district: "assembly_a" as "assembly_a" | "assembly_b" | "assembly_c",
+    district: "",
   });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [locationOptions, setLocationOptions] = useState<ApiLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
 
   useEffect(() => {
     const stored = loadAuth();
@@ -64,6 +68,27 @@ export default function LandingPage() {
     setCheckingSession(false);
   }, [router]);
 
+  useEffect(() => {
+    const loadLocationOptions = async () => {
+      setLocationsLoading(true);
+      try {
+        const response = await getLocations();
+        const rows = response.rows ?? [];
+        setLocationOptions(rows);
+        setForm((prev) => ({
+          ...prev,
+          district: prev.district || rows[0]?.id || "",
+        }));
+      } catch {
+        setLocationOptions([]);
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    loadLocationOptions();
+  }, []);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (authLoading) return;
@@ -71,6 +96,14 @@ export default function LandingPage() {
     setAuthError(null);
 
     try {
+      if (
+        authMode === "register" &&
+        form.role !== "admin" &&
+        !form.district
+      ) {
+        throw new Error("A location must be selected for field agents and staff officers.");
+      }
+
       const payload =
         authMode === "login"
           ? await loginUserApi({
@@ -303,8 +336,8 @@ export default function LandingPage() {
                       }
                       className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     >
-                      <option value="navigator">Navigator</option>
-                      <option value="district_officer">District Officer</option>
+                      <option value="navigator">Field Agent</option>
+                      <option value="district_officer">Staff Officer</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -312,7 +345,7 @@ export default function LandingPage() {
                   {form.role !== "admin" && (
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Assembly
+                        Location
                       </label>
                       <select
                         required
@@ -320,15 +353,23 @@ export default function LandingPage() {
                         onChange={(event) =>
                           setForm((prev) => ({
                             ...prev,
-                            district: event.target.value as typeof form.district,
+                            district: event.target.value,
                           }))
                         }
+                        disabled={locationsLoading || locationOptions.length === 0}
                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                       >
-                        <option value="assembly_a">Assembly A</option>
-                        <option value="assembly_b">Assembly B</option>
-                        <option value="assembly_c">Assembly C</option>
+                        {locationOptions.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name}
+                          </option>
+                        ))}
                       </select>
+                      {!locationsLoading && locationOptions.length === 0 && (
+                        <p className="mt-2 text-xs text-amber-700">
+                          No locations available yet. Ask an admin to create locations first.
+                        </p>
+                      )}
                     </div>
                   )}
                 </>
