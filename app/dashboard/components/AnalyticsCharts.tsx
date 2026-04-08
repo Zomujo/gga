@@ -71,6 +71,10 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
     ? escalationAnalytics.byCategory
     : [];
   const topEscalatedCategory = escalationByCategory[0];
+  const staffOfficerPerformance = officerPerformance.filter((officer) => {
+    const name = String(officer?.name ?? "").toLowerCase();
+    return name.includes("staff") || name.includes("officer");
+  });
   const formatPercent = (value?: number) => {
     if (typeof value !== "number" || Number.isNaN(value)) return "0%";
     return `${Math.round(value * 10) / 10}%`;
@@ -651,17 +655,17 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
         </div>
       </div>
 
-      {/* District Officer Performance - Only show if no district filter */}
-      {(!locationId || locationId === "") && officerPerformance.length > 0 && (
+      {/* Staff Officer Performance - Only show when no location filter */}
+      {(!locationId || locationId === "") && staffOfficerPerformance.length > 0 && (
         <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6">
             <h3 className="text-xl font-bold text-gray-900">
-              District Officer Performance
+              Staff Officer Performance
             </h3>
-            <p className="mt-1 text-sm text-gray-500">Individual officer metrics and workload</p>
+            <p className="mt-1 text-sm text-gray-500">Individual staff workload and resolution outcomes</p>
           </div>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={officerPerformance}>
+            <BarChart data={staffOfficerPerformance}>
               <defs>
                 <linearGradient id="navResolved" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />

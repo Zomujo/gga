@@ -20,6 +20,13 @@ export function ProfileMenu({
   onLogout,
   isLoading,
 }: ProfileMenuProps) {
+  const roleLabel =
+    currentUser.role === "district_officer"
+      ? "Staff Officer"
+      : currentUser.role === "navigator"
+      ? "Field Agent"
+      : "Admin";
+
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -52,8 +59,8 @@ export function ProfileMenu({
         <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-xl">
           <p className="font-semibold text-gray-900">{currentUser.fullName}</p>
           <p className="text-xs text-gray-600">{currentUser.email}</p>
-          <p className="text-xs capitalize text-gray-500">
-            Role: {currentUser.role}
+          <p className="text-xs text-gray-500">
+            Role: {roleLabel}
           </p>
           <button
             className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
@@ -76,4 +83,3 @@ export function ProfileMenu({
     </div>
   );
 }
-

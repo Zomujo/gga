@@ -56,6 +56,11 @@ export function CasesTab({
   onPageChange,
   onPageSizeChange,
 }: CasesTabProps) {
+  const displayedTotal =
+    isAdmin && statusFilter === "All statuses"
+      ? complaintsTotal
+      : filteredComplaints.length;
+
   return (
     <div className="space-y-6">
       {/* Escalations Section - Only for admins */}
@@ -142,7 +147,7 @@ export function CasesTab({
           showDistrictColumn={!isAdmin}
           page={complaintsPage}
           pageSize={complaintsPageSize}
-          total={complaintsTotal}
+          total={displayedTotal}
           loading={complaintsLoading}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}

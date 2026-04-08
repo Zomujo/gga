@@ -387,9 +387,23 @@ export async function getCasesByStatus(token: string, district?: string) {
     "/analytics/cases-by-status",
     { token, query: { locationId } }
   );
-  return (unwrapData<Array<{ status: string; count: number; percentage: number }>>(payload) ?? []).map((row) => ({
-    ...row,
-    status: toDisplayStatus(row.status),
+  const rows = unwrapData<Array<{ status: string; count: number; percentage: number }>>(payload) ?? [];
+  const grouped = rows.reduce<Record<string, { status: string; count: number }>>((acc, row) => {
+    const label = toDisplayStatus(row.status);
+    if (!acc[label]) {
+      acc[label] = { status: label, count: 0 };
+    }
+    acc[label].count += row.count;
+    return acc;
+  }, {});
+
+  const merged = Object.values(grouped);
+  const total = merged.reduce((sum, row) => sum + row.count, 0);
+
+  return merged.map((row) => ({
+    status: row.status,
+    count: row.count,
+    percentage: total > 0 ? (row.count / total) * 100 : 0,
   }));
 }
 

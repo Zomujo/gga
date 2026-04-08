@@ -8,17 +8,17 @@ export const tabs = [
 export const baseFlow = [
   {
     level: "L0",
-    title: "Assembly selection",
+    title: "Location selection",
     prompt:
-      "Welcome to GGA Governance! Select your Assembly:\n1. Assembly A\n2. Assembly B\n3. Assembly C",
+      "Welcome to GGA Governance! Select your location:\n1. Location A\n2. Location B\n3. Location C",
     userAction: "Input: 2",
-    rationale: "Fast routing. User only needs assembly number.",
+    rationale: "Fast routing. User only needs location number.",
   },
   {
     level: "L1",
     title: "Main menu",
-    prompt:
-      "How can we help?\n1. Report a service issue\n2. Track my report\n3. Speak to an officer",
+      prompt:
+        "How can we help?\n1. Report a service issue\n2. Track my case\n3. Speak to an officer",
     userAction: "",
     rationale: "Clear choices, option 3 hands off to human quickly.",
   },
@@ -39,7 +39,7 @@ export const ussdPaths = {
       level: "L3",
       title: "Confirmation",
       prompt:
-        "Thank you! Report logged (ID: [XXXX]). An officer will review your case.",
+        "Thank you! Report logged (Case Code: [XXXXXXXXXX]). An officer will review your case.",
       userAction: "Session ends",
       rationale: "Positive feedback that report succeeded.",
     },
@@ -49,7 +49,7 @@ export const ussdPaths = {
       level: "L2",
       title: "Select topic",
       prompt:
-        "Choose a frequently asked question:\n1. How long for resolution?\n2. Are there any fees?\n3. Who handles my report?",
+        "Choose a frequently asked question:\n1. How long for resolution?\n2. Are there any fees?\n3. Who handles my case?",
       userAction: "Input: 1, 2, or 3",
       rationale: "Keeps the info menu short and memorable for USSD users.",
     },
@@ -76,7 +76,7 @@ export const ussdPaths = {
       title: "Call-back trigger",
       prompt: "Confirmed! Please ensure your line is open. Thank you.",
       userAction: "Session ends",
-      rationale: "Back-end triggers call from assembly officer.",
+      rationale: "Back-end triggers call from a staff officer.",
     },
   ],
 };

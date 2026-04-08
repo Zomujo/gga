@@ -325,14 +325,16 @@ export function useComplaints({
 
     if (currentUser?.role === "district_officer") {
       complaints = liveComplaints.filter((c) => {
-        if (c.assignedToId !== currentUser.id) return false;
-        if (
-          currentUser.district &&
-          c.district &&
-          c.district !== currentUser.district
-        )
-          return false;
-        return true;
+        const isAssignedToMe = c.assignedToId === currentUser.id;
+        const sameLocation = currentUser.locationId
+          ? c.locationId === currentUser.locationId
+          : currentUser.district && c.district
+          ? c.district === currentUser.district
+          : false;
+
+        const isEscalatedFromMyLocation = c.status === "escalated" && sameLocation;
+
+        return isAssignedToMe || isEscalatedFromMyLocation;
       });
     }
 

@@ -18,8 +18,8 @@ export default function TrackReport() {
     setCaseData(null);
 
     try {
-      if (!ticketNumber.match(/GGA-[A-Z]-\d{3,}/)) {
-        setError("Invalid ticket format. Use format like GGA-A-001.");
+      if (!ticketNumber.trim()) {
+        setError("Enter your case code to continue.");
         return;
       }
       const data = await getComplaintByCode(ticketNumber.trim());
@@ -96,7 +96,7 @@ export default function TrackReport() {
             Track Your Report
           </h1>
           <p className="mt-2 text-xl text-gray-600">
-            Enter your ticket number to check the status of your report
+            Enter your case code to check the status of your report
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export default function TrackReport() {
           <form onSubmit={handleSearch} className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Ticket Number
+                Case Code
               </label>
               <input
                 type="text"
@@ -112,10 +112,10 @@ export default function TrackReport() {
                 value={ticketNumber}
                 onChange={(e) => setTicketNumber(e.target.value.toUpperCase())}
                 className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                placeholder="GGA-A-001"
+                placeholder="e.g. YV3UERULET"
               />
               <p className="mt-2 text-sm text-gray-600">
-                Format: GGA-A-001 (provided when you submitted your report)
+                Use the code shown after report submission (example: YV3UERULET)
               </p>
             </div>
 
@@ -243,11 +243,11 @@ export default function TrackReport() {
         <div className="mt-8 rounded-xl border border-white/50 bg-white/60 p-6 backdrop-blur-sm">
           <h3 className="mb-4 font-bold text-gray-900">Need Help?</h3>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>• Keep your ticket number safe for future reference</li>
+            <li>• Keep your case code safe for future reference</li>
             <li>• Cases are typically reviewed within 24-48 hours</li>
             <li>• For urgent issues, contact your assembly directly</li>
             <li>
-              • Lost your ticket number? Contact your assembly or submit a{" "}
+              • Lost your case code? Contact your assembly or submit a{" "}
               <button
                 onClick={() => router.push("/public-dashboard")}
                 className="font-semibold text-emerald-600 hover:underline"
