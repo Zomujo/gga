@@ -61,7 +61,7 @@ export function CasesTable({
           <thead className="sticky top-0 bg-white">
             <tr className="border-b border-gray-200">
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                ID
+                Case Code
               </th>
               {showDistrictColumn && (
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -102,7 +102,7 @@ export function CasesTable({
                   onClick={() => onSelect(c.id)}
                 >
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {c.id.slice(0, 8)}
+                    {c.code || c.id.slice(0, 8)}
                   </td>
                   {showDistrictColumn && (
                     <td className="px-6 py-4 text-sm text-gray-700">

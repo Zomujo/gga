@@ -26,7 +26,7 @@ export function AlertsSection({ overdueComplaints }: AlertsSectionProps) {
           <div key={complaint.id} className="p-6">
             <div>
               <p className="font-semibold text-gray-900">
-                Case {complaint.id.slice(0, 8)}
+                Case {complaint.code || complaint.id.slice(0, 8)}
               </p>
               <p className="text-sm text-gray-700">
                 {formatDisplayText(complaint.category)}
@@ -47,4 +47,3 @@ export function AlertsSection({ overdueComplaints }: AlertsSectionProps) {
     </div>
   );
 }
-

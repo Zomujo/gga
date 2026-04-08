@@ -71,6 +71,10 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
     ? escalationAnalytics.byCategory
     : [];
   const topEscalatedCategory = escalationByCategory[0];
+  const formatPercent = (value?: number) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "0%";
+    return `${Math.round(value * 10) / 10}%`;
+  };
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -359,7 +363,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
                   stroke: '#9ca3af',
                   strokeWidth: 1,
                 }}
-                label={(entry: any) => `${entry.status} ${entry.percentage}%`}
+                label={(entry: any) => `${entry.status} ${formatPercent(entry.percentage)}`}
                 outerRadius={120}
                 innerRadius={60}
                 fill="#8884d8"
@@ -729,10 +733,10 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
               <div className="h-2 flex-1 rounded-full bg-white">
                 <div 
                   className="h-2 rounded-full bg-orange-500"
-                  style={{ width: `${escalationAnalytics.escalationRate}%` }}
+                  style={{ width: formatPercent(escalationAnalytics.escalationRate) }}
                 ></div>
               </div>
-              <p className="text-sm font-semibold text-gray-700">{escalationAnalytics.escalationRate}%</p>
+              <p className="text-sm font-semibold text-gray-700">{formatPercent(escalationAnalytics.escalationRate)}</p>
             </div>
             <p className="mt-2 text-xs text-gray-600">of all cases</p>
           </div>
@@ -755,7 +759,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
               </p>
               <div className="mt-4 flex items-baseline gap-2">
                 <p className="text-4xl font-bold text-pink-600">
-                  {topEscalatedCategory?.percentage || 0}%
+                  {formatPercent(topEscalatedCategory?.percentage)}
                 </p>
                 <p className="text-sm text-gray-600">of escalations</p>
               </div>
@@ -797,7 +801,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
               </p>
               <div className="mt-3 flex items-baseline gap-2">
                 <p className="text-3xl font-bold text-blue-600">
-                  {[...locationPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.resolutionRate}%
+                  {formatPercent([...locationPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.resolutionRate)}
                 </p>
                 <p className="text-sm text-gray-500">resolution rate</p>
               </div>
@@ -813,7 +817,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
               </p>
               <div className="mt-3 flex items-baseline gap-2">
                 <p className="text-3xl font-bold text-purple-600">
-                  {[...casesByStatus].sort((a, b) => b.count - a.count)[0]?.percentage}%
+                  {formatPercent([...casesByStatus].sort((a, b) => b.count - a.count)[0]?.percentage)}
                 </p>
                 <p className="text-sm text-gray-500">of all cases</p>
               </div>

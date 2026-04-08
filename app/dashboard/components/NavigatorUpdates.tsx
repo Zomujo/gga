@@ -10,9 +10,9 @@ interface NavigatorUpdatesProps {
 export function NavigatorUpdates({ navigatorUpdates }: NavigatorUpdatesProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h3 className="mb-4 font-semibold text-gray-900">Navigator Updates</h3>
+      <h3 className="mb-4 font-semibold text-gray-900">Recent Activity</h3>
       {navigatorUpdates.length === 0 && (
-        <p className="text-sm text-gray-600">No navigator updates yet.</p>
+        <p className="text-sm text-gray-600">No recent activity yet.</p>
       )}
       <div className="space-y-4 max-h-96 overflow-auto">
         {navigatorUpdates.map((update) => (
@@ -67,4 +67,3 @@ export function NavigatorUpdates({ navigatorUpdates }: NavigatorUpdatesProps) {
     </div>
   );
 }
-

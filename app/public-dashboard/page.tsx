@@ -23,6 +23,8 @@ export default function PublicDashboard() {
   const [activeSection, setActiveSection] = useState<"submit" | "track" | "view">("submit");
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [locations, setLocations] = useState<LocationOption[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
@@ -96,6 +98,8 @@ export default function PublicDashboard() {
     try {
       // For public submission, we use a dummy token
       const result = await submitComplaint("public", form);
+      setSubmittedCode(result.code);
+      setCopiedCode(false);
       setSubmitSuccess(`Your report has been submitted successfully! Your ticket number is: ${result.code}`);
       setForm({
         phoneNumber: "",
@@ -281,6 +285,34 @@ export default function PublicDashboard() {
                   <p className="text-sm font-medium text-emerald-800">
                     {submitSuccess}
                   </p>
+                  {submittedCode && (
+                    <div className="mt-3 rounded-lg border border-emerald-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                        Ticket Code
+                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <code className="text-sm font-bold text-gray-900">{submittedCode}</code>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(submittedCode);
+                              setCopiedCode(true);
+                              setTimeout(() => setCopiedCode(false), 1500);
+                            } catch {
+                              setCopiedCode(false);
+                            }
+                          }}
+                          className="rounded-md border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                        >
+                          {copiedCode ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600">
+                        Save this code to track your report later.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

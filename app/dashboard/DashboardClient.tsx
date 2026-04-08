@@ -35,6 +35,8 @@ export default function DashboardClient() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [newCaseModal, setNewCaseModal] = useState(false);
   const [adminDistrict, setAdminDistrict] = useState("");
+  const [hasInitializedLocationFilter, setHasInitializedLocationFilter] =
+    useState(false);
   const [locationOptions, setLocationOptions] = useState<
     { value: string; label: string }[]
   >([]);
@@ -64,15 +66,16 @@ export default function DashboardClient() {
       }));
       setLocationOptions(options);
       setLocationError(null);
-      if (options.length > 0 && !adminDistrict) {
-        setAdminDistrict(options[0].value);
+      if (!hasInitializedLocationFilter) {
+        setAdminDistrict("");
+        setHasInitializedLocationFilter(true);
       }
     } catch (error) {
       setLocationError(
         error instanceof Error ? error.message : "Failed to load locations"
       );
     }
-  }, [adminDistrict]);
+  }, [hasInitializedLocationFilter]);
 
   const {
     monitoringMetrics,
