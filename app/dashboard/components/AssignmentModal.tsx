@@ -44,7 +44,7 @@ export function AssignmentModal({
           )}
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Assign to District Officer
+              Assign to Staff Officer
             </label>
             <select
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
@@ -58,7 +58,7 @@ export function AssignmentModal({
               <option value="">
                 {districtOfficersLoading
                   ? "Loading..."
-                  : "Select district officer"}
+                  : "Select staff officer"}
               </option>
               {districtOfficers.map((officer) => (
                 <option key={officer.id} value={officer.id}>
@@ -69,7 +69,7 @@ export function AssignmentModal({
             </select>
             {!districtOfficersLoading && districtOfficers.length === 0 && (
               <p className="mt-2 text-xs text-gray-500">
-                No district officers found for this case’s district.
+                No staff officers found for this location. Ask an admin to create or update a staff officer for this location.
               </p>
             )}
           </div>

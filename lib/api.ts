@@ -200,7 +200,7 @@ const locationCache: LocationCache = {
 };
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DISTRICT_FALLBACKS = ["assembly_a", "assembly_b", "assembly_c"];
 
@@ -242,6 +242,22 @@ function fromBackendCategory(category?: string): FrontendCategory {
 
 function normalizeLabel(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+}
+
+function toDisplayLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function toDisplayStatus(value: string): string {
+  if (value === "RECEIVED") return "Pending";
+  if (value === "ASSIGNED") return "In Progress";
+  if (value === "IN_PROGRESS") return "In Progress";
+  if (value === "CLOSED_WITH_REASONS") return "Rejected";
+  return toDisplayLabel(value);
 }
 
 function getDistrictFromLocation(locationId?: string): string {
@@ -482,18 +498,44 @@ export async function getComplaints(
 ): Promise<{ rows: ApiComplaint[]; total: number; page: number; pageSize: number }> {
   await ensureLocationCache(token);
   const locationId = await resolveLocationId(options?.district, token);
-  const payload = await request<RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>>(
-    "/cases",
-    {
+  const query = {
+    locationId,
+    page: options?.page ?? 1,
+    pageSize: options?.pageSize ?? 10,
+  };
+
+  let page: { rows: RawCase[]; total: number; page: number; pageSize: number };
+  try {
+    const payload = await request<
+      RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>
+    >("/cases", {
+      token,
+      query,
+    });
+    page = unwrapPaginated<RawCase>(payload);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status < 500 || !locationId) {
+      throw error;
+    }
+
+    const fallbackPayload = await request<
+      RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>
+    >("/cases", {
       token,
       query: {
-        locationId,
         page: options?.page ?? 1,
         pageSize: options?.pageSize ?? 10,
       },
-    }
-  );
-  const page = unwrapPaginated<RawCase>(payload);
+    });
+    const fallbackPage = unwrapPaginated<RawCase>(fallbackPayload);
+    const filteredRows = fallbackPage.rows.filter((item) => item.locationId === locationId);
+    page = {
+      ...fallbackPage,
+      rows: filteredRows,
+      total: filteredRows.length,
+    };
+  }
+
   return {
     rows: page.rows.map(mapCase),
     total: page.total,
@@ -814,7 +856,11 @@ export async function getCasesByCategory(
     "/analytics/cases-by-category",
     { token, query: { locationId } }
   );
-  return unwrapData(payload) ?? [];
+  const rows = unwrapArray<{ category: string; count: number }>(payload);
+  return rows.map((row) => ({
+    category: toDisplayLabel(row.category),
+    count: row.count,
+  }));
 }
 
 export async function getCasesByStatus(
@@ -829,11 +875,7 @@ export async function getCasesByStatus(
   const rows = unwrapData<Array<{ status: string; count: number; percentage: number }>>(payload) ?? [];
   return rows.map((row) => ({
     ...row,
-    status: row.status
-      .toLowerCase()
-      .split("_")
-      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" "),
+    status: toDisplayStatus(row.status),
   }));
 }
 
@@ -903,7 +945,7 @@ export async function getResponseTimeDistribution(
     "/analytics/response-time-distribution",
     { token, query: { locationId } }
   );
-  return unwrapData(payload) ?? [];
+  return unwrapArray<{ bucket: string; count: number }>(payload);
 }
 
 export async function getResolutionTimeByCategory(
@@ -915,7 +957,11 @@ export async function getResolutionTimeByCategory(
     "/analytics/resolution-time-by-category",
     { token, query: { locationId } }
   );
-  return unwrapData(payload) ?? [];
+  const rows = unwrapArray<{ category: string; avgDays: number; count: number }>(payload);
+  return rows.map((row) => ({
+    ...row,
+    category: toDisplayLabel(row.category),
+  }));
 }
 
 export async function getDistrictOfficerPerformance(
@@ -928,7 +974,13 @@ export async function getDistrictOfficerPerformance(
     avgResponseHours: number;
     resolutionRate: number;
   }>>>("/analytics/officer-performance", { token });
-  return unwrapData(payload) ?? [];
+  return unwrapArray<{
+    name: string;
+    totalCases: number;
+    resolved: number;
+    avgResponseHours: number;
+    resolutionRate: number;
+  }>(payload);
 }
 
 export async function getWeeklyActivityPattern(
@@ -980,7 +1032,19 @@ export async function getEscalationAnalytics(
       byCategory: { category: string; count: number; percentage: number }[];
     }>
   >("/analytics/escalations", { token, query: { locationId } });
-  return unwrapData(payload);
+  const data = unwrapData<{
+    totalEscalated: number;
+    escalationRate: number;
+    avgDaysBeforeEscalation: number;
+    byCategory: { category: string; count: number; percentage: number }[];
+  }>(payload);
+  return {
+    ...data,
+    byCategory: (data.byCategory ?? []).map((row) => ({
+      ...row,
+      category: toDisplayLabel(row.category),
+    })),
+  };
 }
 
 export async function getPublicStats(locationId?: string): Promise<{

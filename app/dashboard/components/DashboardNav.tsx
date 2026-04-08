@@ -35,7 +35,7 @@ export function DashboardNav({
 }: DashboardNavProps) {
   const visibleTabs = isAdmin
     ? tabs
-    : tabs.filter((t) => t.id !== "monitoring");
+    : tabs.filter((t) => t.id === "cases" || t.id === "ussd");
 
   return (
     <nav className="border-b border-gray-200 bg-white shadow-sm">

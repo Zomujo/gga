@@ -67,6 +67,10 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
   const [weeklyActivity, setWeeklyActivity] = useState<any[]>([]);
   const [escalationAnalytics, setEscalationAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const escalationByCategory = Array.isArray(escalationAnalytics?.byCategory)
+    ? escalationAnalytics.byCategory
+    : [];
+  const topEscalatedCategory = escalationByCategory[0];
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -745,16 +749,16 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
           {/* Top Escalated Category */}
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
             <div className="absolute right-0 top-0 h-32 w-32 translate-x-12 -translate-y-12 rounded-full bg-pink-200 opacity-30"></div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-gray-600">Most Escalated</p>
-            <p className="mt-4 text-2xl font-bold text-gray-900">
-              {escalationAnalytics.byCategory[0]?.category || "N/A"}
-            </p>
-            <div className="mt-4 flex items-baseline gap-2">
-              <p className="text-4xl font-bold text-pink-600">
-                {escalationAnalytics.byCategory[0]?.percentage || 0}%
+              <p className="text-sm font-semibold uppercase tracking-wide text-gray-600">Most Escalated</p>
+              <p className="mt-4 text-2xl font-bold text-gray-900">
+                {topEscalatedCategory?.category || "N/A"}
               </p>
-              <p className="text-sm text-gray-600">of escalations</p>
-            </div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <p className="text-4xl font-bold text-pink-600">
+                  {topEscalatedCategory?.percentage || 0}%
+                </p>
+                <p className="text-sm text-gray-600">of escalations</p>
+              </div>
           </div>
         </div>
       )}

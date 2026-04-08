@@ -44,7 +44,10 @@ export default function DashboardClient() {
   const [newLocationRegion, setNewLocationRegion] = useState("");
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
-    if (!admin) return "cases";
+    if (!admin) {
+      if (path.endsWith("/ussd")) return "ussd";
+      return "cases";
+    }
     if (path === "/admin/dashboard") return "monitoring";
     if (path === "/admin/cases") return "cases";
     if (path === "/admin/locations") return "locations";
@@ -259,28 +262,45 @@ export default function DashboardClient() {
   }, [pathname, currentUser, getTabFromPath]);
 
   useEffect(() => {
-    if (currentUser?.role === "admin" && pathname === "/dashboard") {
+    if (pathname !== "/dashboard") return;
+    if (currentUser?.role === "admin") {
       router.replace("/admin/dashboard");
+      return;
+    }
+    if (currentUser?.role === "district_officer") {
+      router.replace("/staff-officer/cases");
+      return;
+    }
+    if (currentUser?.role === "navigator") {
+      router.replace("/field-agent/cases");
     }
   }, [currentUser, pathname, router]);
 
   const handleTabChange = useCallback(
     (tab: string) => {
       setActiveTab(tab);
-      if (!isAdmin) return;
-
-      const routeMap: Record<string, string> = {
-        monitoring: "/admin/dashboard",
-        cases: "/admin/cases",
-        locations: "/admin/locations",
-        ussd: "/admin/ussd",
-      };
+      const routeMap: Record<string, string> = isAdmin
+        ? {
+            monitoring: "/admin/dashboard",
+            cases: "/admin/cases",
+            locations: "/admin/locations",
+            ussd: "/admin/ussd",
+          }
+        : currentUser?.role === "district_officer"
+        ? {
+            cases: "/staff-officer/cases",
+            ussd: "/staff-officer/ussd",
+          }
+        : {
+            cases: "/field-agent/cases",
+            ussd: "/field-agent/ussd",
+          };
       const nextRoute = routeMap[tab];
       if (nextRoute && pathname !== nextRoute) {
         router.push(nextRoute);
       }
     },
-    [isAdmin, pathname, router]
+    [isAdmin, currentUser?.role, pathname, router]
   );
 
   // Refresh monitoring data when tab changes to monitoring
