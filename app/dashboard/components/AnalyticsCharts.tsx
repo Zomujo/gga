@@ -79,6 +79,10 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
     if (typeof value !== "number" || Number.isNaN(value)) return "0%";
     return `${Math.round(value * 10) / 10}%`;
   };
+  const formatDays = (value?: number) => {
+    if (typeof value !== "number" || Number.isNaN(value)) return "0.0";
+    return (Math.round(value * 10) / 10).toFixed(1);
+  };
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -749,7 +753,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
             <div className="absolute right-0 top-0 h-32 w-32 translate-x-12 -translate-y-12 rounded-full bg-purple-200 opacity-30"></div>
             <p className="text-sm font-semibold uppercase tracking-wide text-gray-600">Avg Days Before Escalation</p>
             <p className="mt-4 text-5xl font-bold text-purple-600">
-              {escalationAnalytics.avgDaysBeforeEscalation}
+              {formatDays(escalationAnalytics.avgDaysBeforeEscalation)}
             </p>
             <p className="mt-4 text-sm text-gray-600">Average time from case creation to escalation</p>
           </div>
