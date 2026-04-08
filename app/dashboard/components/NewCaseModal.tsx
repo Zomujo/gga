@@ -3,12 +3,16 @@
 import { FormEvent } from "react";
 import type { ComplaintFormState } from "../hooks/useComplaints";
 import {
-  districtOptions,
   categoryOptions,
   assistiveDeviceOptions,
   requestTypeOptions,
   issueTypeOptions,
 } from "../utils/constants";
+
+interface LocationOption {
+  value: string;
+  label: string;
+}
 
 interface NewCaseModalProps {
   complaintForm: ComplaintFormState;
@@ -16,6 +20,7 @@ interface NewCaseModalProps {
   complaintSubmitting: boolean;
   complaintStatus: string | null;
   complaintsError: string | null;
+  locationOptions: LocationOption[];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }
@@ -26,6 +31,7 @@ export function NewCaseModal({
   complaintSubmitting,
   complaintStatus,
   complaintsError,
+  locationOptions,
   onSubmit,
   onClose,
 }: NewCaseModalProps) {
@@ -246,7 +252,7 @@ export function NewCaseModal({
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-700">
-                  District *
+                  Location *
                 </span>
                 <select
                   required
@@ -259,8 +265,8 @@ export function NewCaseModal({
                     }))
                   }
                 >
-                  <option value="">Choose district</option>
-                  {districtOptions.map((opt) => (
+                  <option value="">Choose location</option>
+                  {locationOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>

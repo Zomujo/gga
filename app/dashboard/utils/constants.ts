@@ -1,6 +1,7 @@
 export const tabs = [
+  { id: "monitoring", label: "Dashboard" },
   { id: "cases", label: "Cases" },
-  { id: "monitoring", label: "Monitoring" },
+  { id: "locations", label: "Locations" },
   { id: "ussd", label: "USSD Flow" },
 ];
 
@@ -126,12 +127,6 @@ export const issueTypeOptions = [
     label: "Transportation",
   },
   { value: "other", label: "Other" },
-];
-
-export const districtOptions = [
-  { value: "assembly_a", label: "Assembly A" },
-  { value: "assembly_b", label: "Assembly B" },
-  { value: "assembly_c", label: "Assembly C" },
 ];
 
 export const categoryOptions = [

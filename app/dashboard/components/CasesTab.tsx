@@ -3,7 +3,11 @@
 import type { ApiComplaint } from "@/lib/api";
 import { CasesTable } from "./CasesTable";
 import { EscalationsSection } from "./EscalationsSection";
-import { districtOptions } from "../utils/constants";
+
+interface LocationOption {
+  value: string;
+  label: string;
+}
 
 interface CasesTabProps {
   isAdmin: boolean;
@@ -21,6 +25,7 @@ interface CasesTabProps {
   ) => void;
   adminDistrict?: string;
   onAdminDistrictChange?: (district: string) => void;
+  locationOptions?: LocationOption[];
   // Server-side pagination props
   complaintsPage: number;
   complaintsPageSize: number;
@@ -43,6 +48,7 @@ export function CasesTab({
   onUpdateStatus,
   adminDistrict,
   onAdminDistrictChange,
+  locationOptions = [],
   complaintsPage,
   complaintsPageSize,
   complaintsTotal,
@@ -82,8 +88,19 @@ export function CasesTab({
         </div>
         <div className="flex flex-wrap gap-3">
           {isAdmin && (
-            <div className="flex flex-wrap gap-2">
-              {districtOptions.map((d) => {
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onAdminDistrictChange?.("")}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  !adminDistrict
+                    ? "bg-emerald-600 text-white"
+                    : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                All Locations
+              </button>
+              {locationOptions.map((d) => {
                 const active = adminDistrict === d.value;
                 return (
                   <button

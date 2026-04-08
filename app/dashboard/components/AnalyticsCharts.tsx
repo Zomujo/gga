@@ -19,11 +19,11 @@ import {
   Area,
 } from "recharts";
 import {
-  getCasesByAssembly,
+  getCasesByLocation,
   getCasesByCategory,
   getCasesByStatus,
   getCasesTrend,
-  getAssemblyPerformance,
+  getLocationPerformance,
   getResponseTimeDistribution,
   getResolutionTimeByCategory,
   getDistrictOfficerPerformance,
@@ -52,15 +52,15 @@ const STATUS_COLORS: Record<string, string> = {
 
 interface AnalyticsChartsProps {
   token: string;
-  district?: string;
+  locationId?: string;
 }
 
-export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
-  const [casesByAssembly, setCasesByAssembly] = useState<any[]>([]);
+export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
+  const [casesByLocation, setCasesByLocation] = useState<any[]>([]);
   const [casesByCategory, setCasesByCategory] = useState<any[]>([]);
   const [casesByStatus, setCasesByStatus] = useState<any[]>([]);
   const [casesTrend, setCasesTrend] = useState<any[]>([]);
-  const [assemblyPerformance, setAssemblyPerformance] = useState<any[]>([]);
+  const [locationPerformance, setLocationPerformance] = useState<any[]>([]);
   const [responseTimeDistribution, setResponseTimeDistribution] = useState<any[]>([]);
   const [resolutionTimeByCategory, setResolutionTimeByCategory] = useState<any[]>([]);
   const [officerPerformance, setOfficerPerformance] = useState<any[]>([]);
@@ -73,10 +73,10 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
       setLoading(true);
       try {
         // Only pass district if it's not empty
-        const districtFilter = district && district !== "" ? district : undefined;
+        const locationFilter = locationId && locationId !== "" ? locationId : undefined;
         
         const [
-          assembly, 
+          location, 
           category, 
           status, 
           trend, 
@@ -87,23 +87,23 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
           weeklyPattern,
           escalations,
         ] = await Promise.all([
-          getCasesByAssembly(token),
-          getCasesByCategory(token, districtFilter),
-          getCasesByStatus(token, districtFilter),
-          getCasesTrend(token, districtFilter),
-          getAssemblyPerformance(token),
-          getResponseTimeDistribution(token, districtFilter),
-          getResolutionTimeByCategory(token, districtFilter),
+          getCasesByLocation(token),
+          getCasesByCategory(token, locationFilter),
+          getCasesByStatus(token, locationFilter),
+          getCasesTrend(token, locationFilter),
+          getLocationPerformance(token),
+          getResponseTimeDistribution(token, locationFilter),
+          getResolutionTimeByCategory(token, locationFilter),
           getDistrictOfficerPerformance(token),
-          getWeeklyActivityPattern(token, districtFilter),
-          getEscalationAnalytics(token, districtFilter),
+          getWeeklyActivityPattern(token, locationFilter),
+          getEscalationAnalytics(token, locationFilter),
         ]);
 
-        setCasesByAssembly(assembly);
+        setCasesByLocation(location);
         setCasesByCategory(category);
         setCasesByStatus(status);
         setCasesTrend(trend);
-        setAssemblyPerformance(performance);
+        setLocationPerformance(performance);
         setResponseTimeDistribution(responseTime);
         setResolutionTimeByCategory(resolutionTime);
         setOfficerPerformance(officers);
@@ -117,7 +117,7 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
     };
 
     loadChartData();
-  }, [token, district]);
+  }, [token, locationId]);
 
   if (loading) {
     return (
@@ -136,19 +136,19 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
 
   return (
     <div className="space-y-8">
-      {/* Cases by Assembly - Only show if no district filter or "All Assemblies" */}
-      {(!district || district === "") && (
+      {/* Cases by Location - Only show when no location filter */}
+      {(!locationId || locationId === "") && (
         <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                Cases by Assembly
+                Cases by Location
               </h3>
-              <p className="mt-1 text-sm text-gray-500">Distribution across all assemblies</p>
+              <p className="mt-1 text-sm text-gray-500">Distribution across all locations</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={casesByAssembly} barGap={8}>
+            <BarChart data={casesByLocation} barGap={8}>
               <defs>
                 <linearGradient id="barPending" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={COLORS.yellow} stopOpacity={0.9} />
@@ -169,7 +169,7 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
               <XAxis 
-                dataKey="assembly" 
+                dataKey="location" 
                 stroke="#9ca3af" 
                 tick={{ fill: '#6b7280', fontSize: 12 }}
                 tickLine={false}
@@ -391,19 +391,19 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
         </div>
       </div>
 
-      {/* Assembly Performance Comparison - Only show if no district filter or "All Assemblies" */}
-      {(!district || district === "") && (
+      {/* Location Performance Comparison - Only show when no location filter */}
+      {(!locationId || locationId === "") && (
         <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                Assembly Performance Comparison
+                Location Performance Comparison
               </h3>
-              <p className="mt-1 text-sm text-gray-500">Key metrics across all assemblies</p>
+              <p className="mt-1 text-sm text-gray-500">Key metrics across all locations</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={assemblyPerformance} barGap={12}>
+            <BarChart data={locationPerformance} barGap={12}>
               <defs>
                 <linearGradient id="perfResolution" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
@@ -420,7 +420,7 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
               <XAxis 
-                dataKey="assembly" 
+                dataKey="location" 
                 stroke="#9ca3af"
                 tick={{ fill: '#6b7280', fontSize: 12 }}
                 tickLine={false}
@@ -644,7 +644,7 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
       </div>
 
       {/* District Officer Performance - Only show if no district filter */}
-      {(!district || district === "") && officerPerformance.length > 0 && (
+      {(!locationId || locationId === "") && officerPerformance.length > 0 && (
         <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6">
             <h3 className="text-xl font-bold text-gray-900">
@@ -784,16 +784,16 @@ export function AnalyticsCharts({ token, district }: AnalyticsChartsProps) {
             </div>
           )}
 
-          {assemblyPerformance.length > 0 && (
+          {locationPerformance.length > 0 && (
             <div className="group relative overflow-hidden rounded-xl bg-white p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
               <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-blue-100 opacity-50"></div>
               <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Top Performer</p>
               <p className="mt-3 text-2xl font-bold text-gray-900">
-                {[...assemblyPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.assembly}
+                {[...locationPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.location}
               </p>
               <div className="mt-3 flex items-baseline gap-2">
                 <p className="text-3xl font-bold text-blue-600">
-                  {[...assemblyPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.resolutionRate}%
+                  {[...locationPerformance].sort((a, b) => b.resolutionRate - a.resolutionRate)[0]?.resolutionRate}%
                 </p>
                 <p className="text-sm text-gray-500">resolution rate</p>
               </div>

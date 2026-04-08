@@ -16,6 +16,27 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Backend API Setup
+
+Configure API behavior using environment variables:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=/api/v1
+ENABLE_API_PROXY=true
+API_PROXY_TARGET=https://lsdig-server-staging.up.railway.app
+```
+
+- `NEXT_PUBLIC_API_BASE_URL`: base URL used by the frontend.
+- `ENABLE_API_PROXY=true`: enables Next.js rewrite proxy for `/api/v1/*`.
+- `API_PROXY_TARGET`: backend host that receives proxied requests.
+
+Recommended modes:
+
+- Temporary (while backend CORS is pending): keep proxy enabled with `/api/v1`.
+- After backend CORS is fixed: set `NEXT_PUBLIC_API_BASE_URL` to the backend API URL and set `ENABLE_API_PROXY=false`.
+
+Restart the dev server after changing env variables.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

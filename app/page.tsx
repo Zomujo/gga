@@ -52,7 +52,7 @@ export default function LandingPage() {
   useEffect(() => {
     const stored = loadAuth();
     if (stored) {
-      router.replace("/dashboard");
+      router.replace(stored.user.role === "admin" ? "/admin/dashboard" : "/dashboard");
       return;
     }
     setCheckingSession(false);
@@ -80,7 +80,7 @@ export default function LandingPage() {
             });
 
       saveAuth(payload.accessToken, payload.user);
-      router.push("/dashboard");
+      router.push(payload.user.role === "admin" ? "/admin/dashboard" : "/dashboard");
     } catch (error) {
       setAuthError(
         error instanceof Error ? error.message : "Something went wrong"

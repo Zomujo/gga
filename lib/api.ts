@@ -85,6 +85,16 @@ interface RawLocation {
   id: string;
   name: string;
   region?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiLocation {
+  id: string;
+  name: string;
+  region?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface RawUser {
@@ -256,7 +266,10 @@ async function request<T>(
   }
 ): Promise<T> {
   const method = options?.method ?? "GET";
-  const url = new URL(`${API_BASE_URL}${path}`);
+  const rawUrl = `${API_BASE_URL}${path}`;
+  const url = /^https?:\/\//.test(API_BASE_URL)
+    ? new URL(rawUrl)
+    : new URL(rawUrl, window.location.origin);
 
   if (options?.query) {
     Object.entries(options.query).forEach(([key, value]) => {
@@ -323,6 +336,20 @@ function unwrapPaginated<T>(payload: unknown): { rows: T[]; total: number; page:
   };
 }
 
+function unwrapArray<T>(payload: unknown): T[] {
+  const unwrapped = unwrapData<unknown>(payload);
+  if (Array.isArray(unwrapped)) return unwrapped as T[];
+  if (
+    unwrapped &&
+    typeof unwrapped === "object" &&
+    "rows" in unwrapped &&
+    Array.isArray((unwrapped as { rows?: unknown }).rows)
+  ) {
+    return ((unwrapped as { rows: unknown[] }).rows ?? []) as T[];
+  }
+  return [];
+}
+
 function mapUser(raw: RawUser): ApiUser {
   return {
     id: raw.id,
@@ -359,6 +386,16 @@ function mapCase(raw: RawCase): ApiComplaint {
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     locationId: raw.locationId,
+  };
+}
+
+function mapLocation(raw: RawLocation): ApiLocation {
+  return {
+    id: raw.id,
+    name: raw.name,
+    region: raw.region,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
   };
 }
 
@@ -717,7 +754,7 @@ export async function getNavigatorUpdates(
 
 export async function getOverdueComplaints(token: string): Promise<ApiComplaint[]> {
   const payload = await request<RawApiSuccess<RawCase[]>>("/analytics/overdue-cases", { token });
-  return (unwrapData<RawCase[]>(payload) ?? []).map(mapCase);
+  return unwrapArray<RawCase>(payload).map(mapCase);
 }
 
 export async function getCasesByAssembly(
@@ -751,6 +788,20 @@ export async function getCasesByAssembly(
     inProgress: row.assigned + row.inProgress,
     resolved: row.resolved,
     rejected: row.closedWithReasons,
+  }));
+}
+
+export async function getCasesByLocation(
+  token: string
+): Promise<{ location: string; total: number; pending: number; inProgress: number; resolved: number; rejected: number }[]> {
+  const rows = await getCasesByAssembly(token);
+  return rows.map((row) => ({
+    location: row.assembly,
+    total: row.total,
+    pending: row.pending,
+    inProgress: row.inProgress,
+    resolved: row.resolved,
+    rejected: row.rejected,
   }));
 }
 
@@ -825,6 +876,18 @@ export async function getAssemblyPerformance(
   }>>(payload);
   return (rows ?? []).map((row) => ({
     assembly: row.location,
+    resolutionRate: row.resolutionRate,
+    avgResponseHours: row.avgResponseHours,
+    activeCases: row.activeCases,
+  }));
+}
+
+export async function getLocationPerformance(
+  token: string
+): Promise<{ location: string; resolutionRate: number; avgResponseHours: number; activeCases: number }[]> {
+  const rows = await getAssemblyPerformance(token);
+  return rows.map((row) => ({
+    location: row.assembly,
     resolutionRate: row.resolutionRate,
     avgResponseHours: row.avgResponseHours,
     activeCases: row.activeCases,
@@ -956,11 +1019,23 @@ export async function getPublicStats(locationId?: string): Promise<{
   };
 }
 
-export async function getLocations(): Promise<{ rows: RawLocation[] }> {
+export async function getLocations(): Promise<{ rows: ApiLocation[] }> {
   const payload = await request<RawPaginated<RawLocation>>("/locations", {
     query: { page: 1, pageSize: 100 },
   });
-  return { rows: payload.rows ?? [] };
+  return { rows: (payload.rows ?? []).map(mapLocation) };
+}
+
+export async function createLocation(
+  token: string,
+  input: { name: string; region?: string }
+): Promise<ApiLocation> {
+  const payload = await request<RawApiSuccess<RawLocation>>("/locations", {
+    method: "POST",
+    token,
+    body: input,
+  });
+  return mapLocation(unwrapData<RawLocation>(payload));
 }
 
 export { ApiError };

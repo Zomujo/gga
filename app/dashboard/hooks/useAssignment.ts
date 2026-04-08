@@ -7,7 +7,6 @@ import {
   type ApiComplaint,
   type ApiUser,
 } from "@/lib/api";
-import { districtOptions } from "../utils/constants";
 
 interface UseAssignmentOptions {
   token: string | null;
@@ -42,8 +41,7 @@ export function useAssignment({
   }, [districtOfficers, complaintDistrict]);
 
   const complaintDistrictLabel = useMemo(() => {
-    const match = districtOptions.find((d) => d.value === complaintDistrict);
-    return match?.label ?? complaintDistrict ?? "";
+    return complaintDistrict ?? "";
   }, [complaintDistrict]);
 
   const clearAssignmentError = useCallback(() => {
