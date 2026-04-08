@@ -50,6 +50,14 @@ export default function TrackReport() {
     }
   };
 
+  const statusLabel = (status: ApiComplaint["status"]) => {
+    if (status === "pending") return "Pending";
+    if (status === "in_progress") return "In Progress";
+    if (status === "resolved") return "Resolved";
+    if (status === "escalated") return "Escalated";
+    return "Rejected";
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -145,7 +153,7 @@ export default function TrackReport() {
                     caseData.status
                   )}`}
                 >
-                  {caseData.status.replace("_", " ").toUpperCase()}
+                  {statusLabel(caseData.status)}
                 </span>
               </div>
 
@@ -219,6 +227,34 @@ export default function TrackReport() {
                         <span className="text-sm font-semibold text-gray-900">
                           Pending Assignment
                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                        <span className="text-sm text-gray-900">Case Received</span>
+                      </div>
+                    </>
+                  )}
+                  {caseData.status === "escalated" && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-purple-600"></div>
+                        <span className="text-sm font-semibold text-gray-900">Escalated</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                        <span className="text-sm text-gray-900">In Progress</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                        <span className="text-sm text-gray-900">Case Received</span>
+                      </div>
+                    </>
+                  )}
+                  {caseData.status === "rejected" && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-red-600"></div>
+                        <span className="text-sm font-semibold text-gray-900">Closed with reasons</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-emerald-600"></div>

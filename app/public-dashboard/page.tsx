@@ -35,7 +35,7 @@ export default function PublicDashboard() {
 
   const [form, setForm] = useState({
     phoneNumber: "",
-    district: "assembly_a",
+    district: "",
     category: "roads_infrastructure",
     description: "",
   });
@@ -96,7 +96,6 @@ export default function PublicDashboard() {
     setSubmitSuccess(null);
 
     try {
-      // For public submission, we use a dummy token
       const result = await submitComplaint("public", form);
       setSubmittedCode(result.code);
       setCopiedCode(false);
@@ -213,7 +212,7 @@ export default function PublicDashboard() {
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Assembly
+                  Location
                 </label>
                 <select
                   required

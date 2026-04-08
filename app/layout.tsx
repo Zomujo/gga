@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "GGA Governance | Local Service Delivery",
   description: "Inclusive Governance and Service Delivery Platform",
+  icons: {
+    icon: "/GGA-logo-Full-Colour-Pantone.png",
+    shortcut: "/GGA-logo-Full-Colour-Pantone.png",
+    apple: "/GGA-logo-Full-Colour-Pantone.png",
+  },
 };
 
 export default function RootLayout({
