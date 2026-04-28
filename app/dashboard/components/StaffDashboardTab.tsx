@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { ApiComplaint, ApiUser } from "@/lib/api";
+import { BarChart, Bar, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { MetricsGrid } from "./MetricsGrid";
 
 interface StaffDashboardTabProps {
@@ -36,6 +37,8 @@ function formatHours(value: number) {
 function formatDays(value: number) {
   return `${value.toFixed(1)}d`;
 }
+
+const CHART_COLORS = ["#059669", "#0ea5e9", "#f59e0b", "#8b5cf6", "#ef4444", "#6b7280"];
 
 export function StaffDashboardTab({ complaints, currentUser }: StaffDashboardTabProps) {
   const nowIso = useMemo(() => new Date().toISOString(), []);
@@ -120,6 +123,48 @@ export function StaffDashboardTab({ complaints, currentUser }: StaffDashboardTab
     }));
   }, [myCases]);
 
+  const categoryBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    myCases.forEach((c) => {
+      const key = c.category
+        .split("_")
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(" ");
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return [...counts.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [myCases]);
+
+  const weeklyFlow = useMemo(() => {
+    const buckets = [
+      { day: "Mon", assigned: 0, resolved: 0 },
+      { day: "Tue", assigned: 0, resolved: 0 },
+      { day: "Wed", assigned: 0, resolved: 0 },
+      { day: "Thu", assigned: 0, resolved: 0 },
+      { day: "Fri", assigned: 0, resolved: 0 },
+      { day: "Sat", assigned: 0, resolved: 0 },
+      { day: "Sun", assigned: 0, resolved: 0 },
+    ];
+    const dayIndex = (value: string) => {
+      const jsDay = new Date(value).getDay();
+      return jsDay === 0 ? 6 : jsDay - 1;
+    };
+
+    myCases.forEach((c) => {
+      if (c.respondedAt) {
+        buckets[dayIndex(c.respondedAt)].assigned += 1;
+      }
+      if (c.status === "resolved") {
+        buckets[dayIndex(c.updatedAt)].resolved += 1;
+      }
+    });
+
+    return buckets;
+  }, [myCases]);
+
   const recentItems = useMemo(
     () => [...myCases].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)).slice(0, 6),
     [myCases]
@@ -135,6 +180,51 @@ export function StaffDashboardTab({ complaints, currentUser }: StaffDashboardTab
       <MetricsGrid metrics={metrics} />
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="text-base font-semibold text-gray-900">Weekly Case Flow</h3>
+          <p className="mt-1 text-sm text-gray-500">Assigned vs resolved by weekday</p>
+          <div className="mt-4 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyFlow}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="assigned" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="resolved" fill="#059669" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="text-base font-semibold text-gray-900">Top Case Categories</h3>
+          <p className="mt-1 text-sm text-gray-500">Distribution of your assigned portfolio</p>
+          <div className="mt-4 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  labelLine={false}
+                  label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+                >
+                  {categoryBreakdown.map((entry, idx) => (
+                    <Cell key={entry.name} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="text-base font-semibold text-gray-900">Status Breakdown</h3>
           <div className="mt-4 space-y-3">

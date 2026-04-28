@@ -237,7 +237,11 @@ export default function DashboardClient() {
   useEffect(() => {
     if (!token) return;
     loadLocations();
-    refreshComplaints();
+    if (currentUser?.role === "district_officer") {
+      refreshComplaints(undefined, 1, 200);
+    } else {
+      refreshComplaints();
+    }
     if (currentUser?.role === "admin") {
       refreshStatsForAdmin();
       refreshNavigatorUpdates(adminDistrict);
