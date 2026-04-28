@@ -6,6 +6,7 @@ interface MetricItem {
   change: string;
   trend: "up" | "down";
   color: "blue" | "green" | "purple" | "red";
+  footerLabel?: string;
 }
 
 interface MetricsGridProps {
@@ -61,11 +62,12 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
             >
               {metric.change}
             </span>
-            <span className="ml-2 text-sm text-gray-500">vs last week</span>
+            <span className="ml-2 text-sm text-gray-500">
+              {metric.footerLabel ?? "vs last week"}
+            </span>
           </div>
         </div>
       ))}
     </div>
   );
 }
-

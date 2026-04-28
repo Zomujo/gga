@@ -11,6 +11,7 @@ import { DashboardNav } from "./components/DashboardNav";
 import { CasesTab } from "./components/CasesTab";
 import { LocationsTab } from "./components/LocationsTab";
 import { MonitoringTab } from "./components/MonitoringTab";
+import { StaffDashboardTab } from "./components/StaffDashboardTab";
 import { UssdTab } from "./components/UssdTab";
 import { CaseDetailsModal } from "./components/CaseDetailsModal";
 import { NewCaseModal } from "./components/NewCaseModal";
@@ -47,6 +48,7 @@ export default function DashboardClient() {
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
+      if (path.endsWith("/dashboard")) return "staff_dashboard";
       if (path.endsWith("/ussd")) return "ussd";
       return "cases";
     }
@@ -94,6 +96,7 @@ export default function DashboardClient() {
   }, [token, currentUser?.role, refreshStats, adminDistrict]);
 
   const {
+    liveComplaints,
     complaintsLoading,
     complaintsError,
     complaintForm,
@@ -271,7 +274,7 @@ export default function DashboardClient() {
       return;
     }
     if (currentUser?.role === "district_officer") {
-      router.replace("/staff-officer/cases");
+      router.replace("/staff-officer/dashboard");
       return;
     }
     if (currentUser?.role === "navigator") {
@@ -291,6 +294,7 @@ export default function DashboardClient() {
           }
         : currentUser?.role === "district_officer"
         ? {
+            staff_dashboard: "/staff-officer/dashboard",
             cases: "/staff-officer/cases",
             ussd: "/staff-officer/ussd",
           }
@@ -462,6 +466,9 @@ export default function DashboardClient() {
             locationOptions={locationOptions}
           />
         );
+
+      case "staff_dashboard":
+        return <StaffDashboardTab complaints={liveComplaints} currentUser={currentUser!} />;
 
       case "ussd":
         return <UssdTab />;

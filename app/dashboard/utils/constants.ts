@@ -1,5 +1,6 @@
 export const tabs = [
   { id: "monitoring", label: "Dashboard" },
+  { id: "staff_dashboard", label: "My Dashboard" },
   { id: "cases", label: "Cases" },
   { id: "locations", label: "Locations" },
   { id: "ussd", label: "USSD Flow" },

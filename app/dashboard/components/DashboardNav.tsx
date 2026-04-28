@@ -35,6 +35,8 @@ export function DashboardNav({
 }: DashboardNavProps) {
   const visibleTabs = isAdmin
     ? tabs
+    : isDistrictOfficer
+    ? tabs.filter((t) => t.id === "staff_dashboard" || t.id === "cases" || t.id === "ussd")
     : tabs.filter((t) => t.id === "cases" || t.id === "ussd");
 
   return (
@@ -56,7 +58,7 @@ export function DashboardNav({
               <p className="text-sm text-gray-600">Service Delivery Portal</p>
             </div>
           </div>
-          {(isAdmin || isNavigator) && (
+          {(isAdmin || isNavigator || isDistrictOfficer) && (
             <div className="flex rounded-lg bg-gray-100 p-1">
               {visibleTabs.map((tab) => (
                 <button
