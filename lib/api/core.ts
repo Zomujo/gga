@@ -1,3 +1,5 @@
+import { AUTH_EXPIRED_EVENT, clearAuth, setAuthNotice } from "../storage";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 
 interface ApiErrorPayload {
@@ -307,9 +309,26 @@ export async function request<T>(
 
   if (!response.ok) {
     const errorPayload = payload as ApiErrorPayload | null;
+    const errorMessage =
+      errorPayload?.message ?? `Request failed with status ${response.status}`;
+    const errorStatus = errorPayload?.statusCode ?? response.status;
+
+    if (
+      typeof window !== "undefined" &&
+      (response.status === 401 || errorMessage === "INVALID_TOKEN")
+    ) {
+      clearAuth();
+      setAuthNotice("Session expired. Please sign in again.");
+      window.dispatchEvent(
+        new CustomEvent(AUTH_EXPIRED_EVENT, {
+          detail: { message: "Session expired. Please sign in again." },
+        })
+      );
+    }
+
     throw new ApiError(
-      errorPayload?.message ?? `Request failed with status ${response.status}`,
-      errorPayload?.statusCode ?? response.status,
+      errorMessage,
+      errorStatus,
       errorPayload?.data
     );
   }

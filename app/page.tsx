@@ -8,7 +8,7 @@ import {
   getLocations,
   type ApiLocation,
 } from "@/lib/api";
-import { loadAuth, saveAuth } from "@/lib/storage";
+import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
 
 const stats = [
   { label: "Assemblies", value: "3" },
@@ -64,6 +64,10 @@ export default function LandingPage() {
         router.replace("/field-agent/cases");
       }
       return;
+    }
+    const authNotice = consumeAuthNotice();
+    if (authNotice) {
+      setAuthError(authNotice);
     }
     setCheckingSession(false);
   }, [router]);
