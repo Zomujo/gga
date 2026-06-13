@@ -7,6 +7,7 @@ interface LocationOption {
 
 interface LocationsTabProps {
   locationOptions: LocationOption[];
+  locationsLoading: boolean;
   creatingLocation: boolean;
   newLocationName: string;
   newLocationRegion: string;
@@ -17,6 +18,7 @@ interface LocationsTabProps {
 
 export function LocationsTab({
   locationOptions,
+  locationsLoading,
   creatingLocation,
   newLocationName,
   newLocationRegion,
@@ -41,7 +43,12 @@ export function LocationsTab({
           </p>
 
           <div className="mt-4 max-h-[28rem] space-y-2 overflow-auto pr-1">
-            {locationOptions.length === 0 ? (
+            {locationsLoading ? (
+              <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
+                <span>Loading locations...</span>
+              </div>
+            ) : locationOptions.length === 0 ? (
               <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
                 No locations yet. Create your first location.
               </p>

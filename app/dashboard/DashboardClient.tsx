@@ -39,6 +39,7 @@ export default function DashboardClient() {
   const [locationOptions, setLocationOptions] = useState<
     { value: string; label: string }[]
   >([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [creatingLocation, setCreatingLocation] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
@@ -58,6 +59,7 @@ export default function DashboardClient() {
   }, []);
 
   const loadLocations = useCallback(async () => {
+    setLocationsLoading(true);
     try {
       const response = await getLocations();
       const options = (response.rows ?? []).map((location: ApiLocation) => ({
@@ -74,6 +76,8 @@ export default function DashboardClient() {
       setLocationError(
         error instanceof Error ? error.message : "Failed to load locations"
       );
+    } finally {
+      setLocationsLoading(false);
     }
   }, [hasInitializedLocationFilter]);
 
@@ -446,6 +450,7 @@ export default function DashboardClient() {
         return isAdmin ? (
           <LocationsTab
             locationOptions={locationOptions}
+            locationsLoading={locationsLoading}
             creatingLocation={creatingLocation}
             newLocationName={newLocationName}
             newLocationRegion={newLocationRegion}

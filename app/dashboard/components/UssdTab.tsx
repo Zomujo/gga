@@ -32,24 +32,37 @@ export function UssdTab({ compact }: UssdTabProps) {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-100 p-2">
         {[
-          { id: "report", label: "Path 1: Report Problem" },
-          { id: "info", label: "Path 2: Ask for Info" },
-          { id: "navigator", label: "Path 3: Speak to Navigator" },
+          {
+            id: "report",
+            label: "Path 1: Report Problem",
+            mobileLabel: "Report",
+          },
+          {
+            id: "info",
+            label: "Path 2: Ask for Info",
+            mobileLabel: "Info",
+          },
+          {
+            id: "navigator",
+            label: "Path 3: Speak to Navigator",
+            mobileLabel: "Navigator",
+          },
         ].map((path) => (
           <button
             key={path.id}
             onClick={() =>
               setActivePath(path.id as "report" | "info" | "navigator")
             }
-            className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
+            className={`rounded-lg px-2 py-2 text-xs font-semibold whitespace-nowrap transition-colors sm:px-4 sm:text-sm ${
               activePath === path.id
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-gray-700 hover:bg-white"
             }`}
           >
-            {path.label}
+            <span className="sm:hidden">{path.mobileLabel}</span>
+            <span className="hidden sm:inline">{path.label}</span>
           </button>
         ))}
       </div>
@@ -114,4 +127,3 @@ export function UssdTab({ compact }: UssdTabProps) {
     </div>
   );
 }
-
