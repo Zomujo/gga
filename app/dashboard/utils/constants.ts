@@ -1,9 +1,9 @@
 export const tabs = [
-  { id: "monitoring", label: "Dashboard" },
-  { id: "staff_dashboard", label: "My Dashboard" },
-  { id: "cases", label: "Cases" },
-  { id: "locations", label: "Locations" },
-  { id: "ussd", label: "USSD Flow" },
+  { id: "monitoring", label: "Dashboard", mobileLabel: "Home" },
+  { id: "staff_dashboard", label: "My Dashboard", mobileLabel: "Mine" },
+  { id: "cases", label: "Cases", mobileLabel: "Cases" },
+  { id: "locations", label: "Locations", mobileLabel: "Places" },
+  { id: "ussd", label: "USSD Flow", mobileLabel: "USSD" },
 ];
 
 export const baseFlow = [
