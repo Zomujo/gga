@@ -34,7 +34,7 @@ export function DashboardNav({
   isLoading,
 }: DashboardNavProps) {
   const visibleTabs = isAdmin
-    ? tabs
+    ? tabs.filter((t) => t.id !== "staff_dashboard")
     : isDistrictOfficer
     ? tabs.filter((t) => t.id === "staff_dashboard" || t.id === "cases" || t.id === "ussd")
     : tabs.filter((t) => t.id === "cases" || t.id === "ussd");
@@ -81,8 +81,8 @@ export function DashboardNav({
         </div>
 
         {(isAdmin || isNavigator || isDistrictOfficer) && (
-          <div className="-mx-1 overflow-x-auto lg:mx-auto lg:w-fit">
-            <div className="flex min-w-max gap-2 rounded-lg bg-gray-100 p-1">
+          <div className="-mx-1 overflow-x-auto lg:mx-0">
+            <div className="mx-auto flex w-max min-w-max gap-2 rounded-lg bg-gray-100 p-1">
               {visibleTabs.map((tab) => (
                 <button
                   key={tab.id}
