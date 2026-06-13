@@ -15,8 +15,6 @@ import { StaffDashboardTab } from "./components/StaffDashboardTab";
 import { UssdTab } from "./components/UssdTab";
 import { CaseDetailsModal } from "./components/CaseDetailsModal";
 import { NewCaseModal } from "./components/NewCaseModal";
-import { AssignmentModal } from "./components/AssignmentModal";
-import { EscalationModal } from "./components/EscalationModal";
 import { createLocation, getLocations, type ApiLocation } from "@/lib/api";
 
 export default function DashboardClient() {
@@ -538,41 +536,6 @@ export default function DashboardClient() {
         />
       )}
 
-      {/* Assignment Modal */}
-      {assignmentModal && (
-        <AssignmentModal
-          assignee={assignee}
-          setAssignee={setAssignee}
-          expectedResolutionDate={expectedResolutionDate}
-          setExpectedResolutionDate={setExpectedResolutionDate}
-          districtOfficers={eligibleDistrictOfficers}
-          districtOfficersLoading={districtOfficersLoading}
-          assigning={assigning}
-          errorMessage={assignmentError}
-          onClearError={clearAssignmentError}
-          onAssign={handleAssign}
-          onClose={closeAssignmentModal}
-        />
-      )}
-
-      {/* Escalation Modal */}
-      {escalationModal && (
-        <EscalationModal
-          targetAdmin={targetAdmin}
-          setTargetAdmin={setTargetAdmin}
-          escalationReason={escalationReason}
-          setEscalationReason={setEscalationReason}
-          admins={admins}
-          adminsLoading={adminsLoading}
-          escalating={escalating}
-          errorMessage={escalationError}
-          onClearError={clearEscalationError}
-          onEscalate={handleEscalate}
-          onRefreshAdmins={fetchAdmins}
-          onClose={closeEscalationModal}
-        />
-      )}
-
       {/* Case Details Modal */}
       {selectedCase && activeComplaint && (
         <CaseDetailsModal
@@ -583,6 +546,19 @@ export default function DashboardClient() {
           districtOfficers={districtOfficers}
           navigators={navigators}
           admins={admins}
+          assignmentModal={assignmentModal}
+          assignee={assignee}
+          expectedResolutionDate={expectedResolutionDate}
+          eligibleDistrictOfficers={eligibleDistrictOfficers}
+          districtOfficersLoading={districtOfficersLoading}
+          assigning={assigning}
+          assignmentError={assignmentError}
+          escalationModal={escalationModal}
+          targetAdmin={targetAdmin}
+          escalationReason={escalationReason}
+          adminsLoading={adminsLoading}
+          escalating={escalating}
+          escalationError={escalationError}
           creatorLoadingIds={creatorLoadingIds}
           assignedLoadingIds={assignedLoadingIds}
           lastAction={lastAction}
@@ -591,6 +567,17 @@ export default function DashboardClient() {
           onClose={handleCloseCaseDetailsModal}
           onOpenAssignmentModal={handleOpenAssignmentModal}
           onOpenEscalationModal={handleOpenEscalationModal}
+          onCloseAssignmentModal={closeAssignmentModal}
+          onCloseEscalationModal={closeEscalationModal}
+          onSetAssignee={setAssignee}
+          onSetExpectedResolutionDate={setExpectedResolutionDate}
+          onAssign={handleAssign}
+          onClearAssignmentError={clearAssignmentError}
+          onSetTargetAdmin={setTargetAdmin}
+          onSetEscalationReason={setEscalationReason}
+          onEscalate={handleEscalate}
+          onClearEscalationError={clearEscalationError}
+          onRefreshAdmins={fetchAdmins}
           onUpdateStatus={handleUpdateStatus}
         />
       )}
