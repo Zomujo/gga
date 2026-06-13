@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { submitComplaint, getLocations, getPublicStats } from "@/lib/api";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  submitComplaint,
+  getComplaintByCode,
+  getLocations,
+  getPublicStats,
+  type ApiComplaint,
+} from "@/lib/api";
 import { categoryOptions } from "@/app/dashboard/utils/constants";
 
 interface LocationOption {
@@ -18,9 +24,18 @@ interface PublicStats {
   byCategory: { category: string; count: number }[];
 }
 
+type PublicSection = "submit" | "track" | "view";
+
+function parseSection(value: string | null): PublicSection {
+  if (value === "track" || value === "view") return value;
+  return "submit";
+}
+
 export default function PublicDashboard() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<"submit" | "track" | "view">("submit");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeSection = parseSection(searchParams.get("tab"));
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
@@ -32,6 +47,10 @@ export default function PublicDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
   const [statsLocationId, setStatsLocationId] = useState<string>("");
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [caseData, setCaseData] = useState<ApiComplaint | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     phoneNumber: "",
@@ -115,6 +134,72 @@ export default function PublicDashboard() {
     }
   };
 
+  const handleTrackSearch = async (e: FormEvent) => {
+    e.preventDefault();
+    setSearching(true);
+    setTrackError(null);
+    setCaseData(null);
+
+    try {
+      if (!ticketNumber.trim()) {
+        setTrackError("Enter your case code to continue.");
+        return;
+      }
+      const data = await getComplaintByCode(ticketNumber.trim());
+      setCaseData(data);
+    } catch (error) {
+      setTrackError(
+        error instanceof Error
+          ? error.message
+          : "Failed to search. Please try again."
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
+      case "resolved":
+        return "bg-emerald-100 text-emerald-800";
+      case "escalated":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const statusLabel = (status: ApiComplaint["status"]) => {
+    if (status === "pending") return "Pending";
+    if (status === "in_progress") return "In Progress";
+    if (status === "resolved") return "Resolved";
+    if (status === "escalated") return "Escalated";
+    return "Rejected";
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const changeSection = (section: PublicSection) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (section === "submit") {
+      params.delete("tab");
+    } else {
+      params.set("tab", section);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
       {/* Header */}
@@ -152,38 +237,39 @@ export default function PublicDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="mb-8 flex gap-2 rounded-xl bg-white/60 p-2 backdrop-blur-sm">
+        <div className="mb-8 grid grid-cols-3 gap-2 rounded-xl bg-white/60 p-2 backdrop-blur-sm">
           <button
-            onClick={() => setActiveSection("submit")}
-            className={`flex-1 rounded-lg px-6 py-3 text-sm font-semibold transition-all ${
+            onClick={() => changeSection("submit")}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm ${
               activeSection === "submit"
                 ? "bg-emerald-600 text-white shadow-md"
                 : "text-gray-600 hover:bg-white/50"
             }`}
           >
-            Submit Report
+            <span className="sm:hidden">Submit</span>
+            <span className="hidden sm:inline">Submit Report</span>
           </button>
           <button
-            onClick={() => {
-              router.push("/track");
-            }}
-            className={`flex-1 rounded-lg px-6 py-3 text-sm font-semibold transition-all ${
+            onClick={() => changeSection("track")}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm ${
               activeSection === "track"
                 ? "bg-emerald-600 text-white shadow-md"
                 : "text-gray-600 hover:bg-white/50"
             }`}
           >
-            Track Report
+            <span className="sm:hidden">Track</span>
+            <span className="hidden sm:inline">Track Report</span>
           </button>
           <button
-            onClick={() => setActiveSection("view")}
-            className={`flex-1 rounded-lg px-6 py-3 text-sm font-semibold transition-all ${
+            onClick={() => changeSection("view")}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm ${
               activeSection === "view"
                 ? "bg-emerald-600 text-white shadow-md"
                 : "text-gray-600 hover:bg-white/50"
             }`}
           >
-            View Community Issues
+            <span className="sm:hidden">Community</span>
+            <span className="hidden sm:inline">View Community Issues</span>
           </button>
         </div>
 
@@ -323,6 +409,198 @@ export default function PublicDashboard() {
                 {submitting ? "Submitting..." : "Submit Report"}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Track Report Section */}
+        {activeSection === "track" && (
+          <div className="space-y-8">
+            <div className="rounded-2xl border border-white/50 bg-white/80 p-8 backdrop-blur-xl">
+              <h2 className="mb-6 text-2xl font-bold text-gray-900">
+                Track Your Report
+              </h2>
+              <form onSubmit={handleTrackSearch} className="space-y-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Case Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={ticketNumber}
+                    onChange={(e) => setTicketNumber(e.target.value.toUpperCase())}
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="e.g. YV3UERULET"
+                  />
+                  <p className="mt-2 text-sm text-gray-600">
+                    Use the code shown after report submission.
+                  </p>
+                </div>
+
+                {trackError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-medium text-red-800">{trackError}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={searching}
+                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {searching ? "Searching..." : "Track Report"}
+                </button>
+              </form>
+
+              {caseData && (
+                <div className="mt-8 space-y-6 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Case #{caseData.code}
+                    </h3>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(
+                        caseData.status
+                      )}`}
+                    >
+                      {statusLabel(caseData.status)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">Category</p>
+                      <p className="mt-1 text-gray-900">
+                        {caseData.category.replace(/_/g, " ")}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">Description</p>
+                      <p className="mt-1 text-gray-900">{caseData.description}</p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Submitted</p>
+                        <p className="mt-1 text-gray-900">{formatDate(caseData.createdAt)}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Last Updated</p>
+                        <p className="mt-1 text-gray-900">{formatDate(caseData.updatedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-emerald-300 bg-white p-4">
+                    <h4 className="mb-2 font-semibold text-gray-900">Status Timeline</h4>
+                    <div className="space-y-2">
+                      {caseData.status === "resolved" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Resolved</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">In Progress</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Assigned</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Received</span>
+                          </div>
+                        </>
+                      )}
+                      {caseData.status === "in_progress" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 animate-pulse rounded-full bg-blue-600"></div>
+                            <span className="text-sm font-semibold text-gray-900">In Progress</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Assigned</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Received</span>
+                          </div>
+                        </>
+                      )}
+                      {caseData.status === "pending" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 animate-pulse rounded-full bg-yellow-600"></div>
+                            <span className="text-sm font-semibold text-gray-900">
+                              Pending Assignment
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Received</span>
+                          </div>
+                        </>
+                      )}
+                      {caseData.status === "escalated" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 animate-pulse rounded-full bg-purple-600"></div>
+                            <span className="text-sm font-semibold text-gray-900">Escalated</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">In Progress</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Received</span>
+                          </div>
+                        </>
+                      )}
+                      {caseData.status === "rejected" && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-red-600"></div>
+                            <span className="text-sm font-semibold text-gray-900">
+                              Closed with reasons
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-600"></div>
+                            <span className="text-sm text-gray-900">Case Received</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-blue-50 p-4">
+                    <p className="text-sm text-blue-900">
+                      <strong>Note:</strong> You will be contacted via the phone number
+                      you provided if additional information is needed or when your
+                      case is resolved.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-white/50 bg-white/60 p-6 backdrop-blur-sm">
+              <h3 className="mb-4 font-bold text-gray-900">Need Help?</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Keep your case code safe for future reference</li>
+                <li>• Cases are typically reviewed within 24-48 hours</li>
+                <li>• For urgent issues, contact your assembly directly</li>
+                <li>
+                  • Lost your case code? Contact your assembly or submit a new report.
+                </li>
+              </ul>
+            </div>
           </div>
         )}
 

@@ -41,6 +41,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -150,26 +151,68 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
       <header className="border-b border-white/20 bg-white/40 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-auto items-center justify-center overflow-hidden">
-              <img
-                src={encodeURI("/GGA-logo-Full-Colour-Pantone.png")}
-                alt="Good Governance Africa"
-                className="h-full w-auto object-contain"
-              />
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-auto items-center justify-center overflow-hidden sm:h-12">
+                <img
+                  src={encodeURI("/GGA-logo-Full-Colour-Pantone.png")}
+                  alt="Good Governance Africa"
+                  className="h-full w-auto object-contain"
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push("/public-dashboard")}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-200 bg-white/80 text-emerald-700 shadow-sm sm:hidden"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {mobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
+          <div
+            className={`${
+              mobileMenuOpen ? "mt-4 grid" : "hidden"
+            } gap-3 sm:mt-0 sm:flex sm:items-center sm:justify-end sm:gap-4`}
+          >
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                router.push("/public-dashboard");
+              }}
+              className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto sm:py-2"
             >
               Citizen Portal
             </button>
             <button
-              onClick={() => router.push("/track")}
-              className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                router.push("/track");
+              }}
+              className="w-full rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 sm:w-auto sm:py-2"
             >
               Track Report
             </button>
@@ -177,18 +220,33 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-12 lg:py-20">
-        <div className="grid gap-16 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
-          <section className="space-y-10">
-            <div className="space-y-6">
-              <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:py-20">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
+          <section className="order-1 space-y-8 lg:space-y-10">
+            <div className="space-y-5 sm:space-y-6">
+              <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-[11px] font-semibold text-white shadow-lg sm:px-4 sm:text-xs">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-white"></span>
                 Local Service Delivery & Inclusive Governance
               </span>
-              <div className="flex flex-wrap gap-3">
+              <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-7xl">
+                Connect citizens to{" "}
+                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  responsive
+                </span>{" "}
+                local assemblies.
+              </h2>
+              <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-xl">
+                GGA Governance connects citizen reporting to structured assembly
+                response. Every report becomes a trackable case with clear
+                ownership and visible outcomes.
+              </p>
+            </div>
+
+            <div className="hidden lg:block lg:space-y-10">
+              <div className="grid gap-3 sm:flex sm:flex-wrap">
                 <button
                   onClick={() => router.push("/public-dashboard")}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 sm:w-auto"
                 >
                   <svg
                     className="h-5 w-5"
@@ -207,7 +265,7 @@ export default function LandingPage() {
                 </button>
                 <button
                   onClick={() => router.push("/track")}
-                  className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg hover:bg-emerald-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg hover:bg-emerald-50 sm:w-auto"
                 >
                   <svg
                     className="h-5 w-5"
@@ -225,63 +283,51 @@ export default function LandingPage() {
                   Track My Report
                 </button>
               </div>
-              <h2 className="text-5xl font-extrabold leading-tight text-gray-900 sm:text-6xl lg:text-7xl">
-                Connect citizens to{" "}
-                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  responsive
-                </span>{" "}
-                local assemblies.
-              </h2>
-              <p className="text-xl leading-relaxed text-gray-600">
-                GGA Governance connects citizen reporting to structured assembly
-                response. Every report becomes a trackable case with clear
-                ownership and visible outcomes.
-              </p>
-            </div>
 
-            <ul className="space-y-4">
-              {highlights.map((item, index) => (
-                <li key={item} className="group flex items-start gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
-                    <span className="text-sm font-bold text-white">
-                      {index + 1}
-                    </span>
+              <ul className="space-y-4">
+                {highlights.map((item, index) => (
+                  <li key={item} className="group flex items-start gap-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
+                      <span className="text-sm font-bold text-white">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <p className="pt-1 text-base font-medium text-gray-800 sm:text-lg">
+                      {item}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {stats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl sm:p-6"
+                  >
+                    <p className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                      {stat.value}
+                    </p>
+                    <p className="mt-2 text-sm font-medium uppercase tracking-wide text-gray-600">
+                      {stat.label}
+                    </p>
                   </div>
-                  <p className="pt-1 text-lg font-medium text-gray-800">
-                    {item}
-                  </p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="group rounded-2xl border border-white/50 bg-white/60 p-6 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl"
-                >
-                  <p className="text-4xl font-extrabold text-gray-900">
-                    {stat.value}
-                  </p>
-                  <p className="mt-2 text-sm font-medium uppercase tracking-wide text-gray-600">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
 
           <section
             id="auth-card"
-            className="sticky top-8 rounded-3xl border border-white/50 bg-white/80 p-8 shadow-2xl backdrop-blur-xl"
+            className="order-2 rounded-3xl border border-white/50 bg-white/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:order-none lg:sticky lg:top-8"
           >
-            <div className="mb-8">
-              <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 sm:mb-8">
+              <div className="mb-5 flex items-center justify-between sm:mb-6">
                 <div>
                   <p className="text-sm font-semibold text-emerald-600">
                     {authMode === "login" ? "Welcome back" : "Get started"}
                   </p>
-                  <h3 className="text-3xl font-bold text-gray-900">
+                  <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
                     {authMode === "login" ? "Sign in" : "Create account"}
                   </h3>
                 </div>
@@ -303,7 +349,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
               {authMode === "register" && (
                 <>
                   <div>
@@ -436,7 +482,7 @@ export default function LandingPage() {
               </button>
             </form>
 
-            <div className="mt-8 space-y-4 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 border border-gray-200/50">
+            <div className="mt-6 space-y-4 rounded-2xl border border-gray-200/50 bg-gradient-to-br from-gray-50 to-gray-100/50 p-5 sm:mt-8 sm:p-6">
               <p className="text-sm font-bold text-gray-900">How it works</p>
               <ul className="space-y-4 text-sm text-gray-700">
                 {quickSteps.map((step, index) => (
@@ -455,11 +501,85 @@ export default function LandingPage() {
               </ul>
             </div>
           </section>
+
+          <section className="order-3 space-y-8 lg:hidden">
+            <div className="grid gap-3 sm:flex sm:flex-wrap">
+              <button
+                onClick={() => router.push("/public-dashboard")}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 sm:w-auto"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Report an Issue
+              </button>
+              <button
+                onClick={() => router.push("/track")}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg hover:bg-emerald-50 sm:w-auto"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                Track My Report
+              </button>
+            </div>
+
+            <ul className="space-y-4">
+              {highlights.map((item, index) => (
+                <li key={item} className="group flex items-start gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
+                    <span className="text-sm font-bold text-white">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <p className="pt-1 text-base font-medium text-gray-800 sm:text-lg">
+                    {item}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl sm:p-6"
+                >
+                  <p className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    {stat.value}
+                  </p>
+                  <p className="mt-2 text-sm font-medium uppercase tracking-wide text-gray-600">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </main>
 
       <footer className="border-t border-white/30 bg-white/30 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
           <div className="flex flex-col items-center justify-center gap-6">
             <div className="flex flex-wrap items-center justify-center gap-8">
               <img
