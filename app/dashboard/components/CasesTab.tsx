@@ -91,51 +91,39 @@ export function CasesTab({
               : "Cases you've reported from the field"}
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {isAdmin && (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onAdminDistrictChange?.("")}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                  !adminDistrict
-                    ? "bg-emerald-600 text-white"
-                    : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
-                }`}
+            <label className="block">
+              <span className="sr-only">Location</span>
+              <select
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                value={adminDistrict || ""}
+                onChange={(e) => onAdminDistrictChange?.(e.target.value)}
               >
-                All Locations
-              </button>
-              {locationOptions.map((d) => {
-                const active = adminDistrict === d.value;
-                return (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => onAdminDistrictChange?.(d.value)}
-                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                      active
-                        ? "bg-emerald-600 text-white"
-                        : "border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                );
-              })}
-            </div>
+                <option value="">All Locations</option>
+                {locationOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
-          <select
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-emerald-500 focus:outline-none"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option>All statuses</option>
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Escalated</option>
-            <option>Resolved</option>
-            <option>Rejected</option>
-          </select>
+          <label className="block">
+            <span className="sr-only">Status</span>
+            <select
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-emerald-500 focus:outline-none"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option>All statuses</option>
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Escalated</option>
+              <option>Resolved</option>
+              <option>Rejected</option>
+            </select>
+          </label>
         </div>
       </div>
 
