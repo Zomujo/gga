@@ -25,7 +25,7 @@ const highlights = [
 const quickSteps = [
   {
     title: "1. Create an account",
-    copy: "Register as a field agent, staff officer, or admin to access the operations portal.",
+    copy: "Register as a field agent to access the operations portal.",
   },
   {
     title: "2. Capture reports",
@@ -46,7 +46,6 @@ export default function LandingPage() {
     fullName: "",
     email: "",
     password: "",
-    role: "navigator" as "district_officer" | "admin" | "navigator",
     district: "",
   });
   const [authLoading, setAuthLoading] = useState(false);
@@ -101,12 +100,8 @@ export default function LandingPage() {
     setAuthError(null);
 
     try {
-      if (
-        authMode === "register" &&
-        form.role !== "admin" &&
-        !form.district
-      ) {
-        throw new Error("A location must be selected for field agents and staff officers.");
+      if (authMode === "register" && !form.district) {
+        throw new Error("A location must be selected for field agents.");
       }
 
       const payload =
@@ -119,8 +114,8 @@ export default function LandingPage() {
               email: form.email,
               password: form.password,
               fullName: form.fullName,
-              role: form.role,
-              district: form.role !== "admin" ? form.district : undefined,
+              role: "navigator",
+              district: form.district,
             });
 
       saveAuth(payload.accessToken, payload.user);
@@ -373,55 +368,35 @@ export default function LandingPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-gray-700">
-                      Role
+                      Location
                     </label>
                     <select
                       required
-                      value={form.role}
+                      value={form.district}
                       onChange={(event) =>
                         setForm((prev) => ({
                           ...prev,
-                          role: event.target.value as typeof form.role,
+                          district: event.target.value,
                         }))
                       }
+                      disabled={locationsLoading || locationOptions.length === 0}
                       className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     >
-                      <option value="navigator">Field Agent</option>
-                      <option value="district_officer">Staff Officer</option>
-                      <option value="admin">Admin</option>
+                      {locationOptions.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
                     </select>
+                    <p className="mt-2 text-xs text-gray-500">
+                      New public signups are created as Field Agents.
+                    </p>
+                    {!locationsLoading && locationOptions.length === 0 && (
+                      <p className="mt-2 text-xs text-amber-700">
+                        No locations available yet. Ask an admin to create locations first.
+                      </p>
+                    )}
                   </div>
-
-                  {form.role !== "admin" && (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Location
-                      </label>
-                      <select
-                        required
-                        value={form.district}
-                        onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            district: event.target.value,
-                          }))
-                        }
-                        disabled={locationsLoading || locationOptions.length === 0}
-                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                      >
-                        {locationOptions.map((location) => (
-                          <option key={location.id} value={location.id}>
-                            {location.name}
-                          </option>
-                        ))}
-                      </select>
-                      {!locationsLoading && locationOptions.length === 0 && (
-                        <p className="mt-2 text-xs text-amber-700">
-                          No locations available yet. Ask an admin to create locations first.
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </>
               )}
 

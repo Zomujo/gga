@@ -127,7 +127,7 @@ export function CasesTable({
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                      className={`inline-flex whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold ${
                         c.status === "pending"
                           ? "bg-yellow-100 text-yellow-800"
                           : c.status === "in_progress"
@@ -151,29 +151,35 @@ export function CasesTable({
 
       {/* Pagination Controls */}
       {total > 0 && (
-        <div className="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Show</span>
-            <select
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span>per page</span>
-          </div>
+        <div className="space-y-3 border-t border-gray-200 px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <span>per page</span>
+            </div>
 
-          <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">
               Showing {Math.min((page - 1) * pageSize + 1, total)}–
               {Math.min(page * pageSize, total)} of {total}
             </span>
-            <div className="flex gap-1">
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
+            <span className="text-sm text-gray-700">
+              {page} / {totalPages || 1}
+            </span>
+            <div className="grid grid-cols-4 gap-1 sm:flex">
               <button
                 type="button"
                 onClick={() => onPageChange(1)}
@@ -191,9 +197,6 @@ export function CasesTable({
               >
                 «
               </button>
-              <span className="flex items-center px-2 text-sm text-gray-700">
-                {page} / {totalPages || 1}
-              </span>
               <button
                 type="button"
                 onClick={() => onPageChange(Math.min(totalPages, page + 1))}

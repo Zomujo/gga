@@ -56,7 +56,7 @@ export function ProfileMenu({
         </span>
       </button>
       {profileMenuOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-60 rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-xl">
+        <div className="absolute right-0 z-10 mt-2 w-60 max-w-[calc(100vw-1rem)] rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-xl">
           <p className="font-semibold text-gray-900">{currentUser.fullName}</p>
           <p className="text-xs text-gray-600">{currentUser.email}</p>
           <p className="text-xs text-gray-500">
