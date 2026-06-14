@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #111827;
+  --font-geist-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", sans-serif;
+  --font-geist-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono",
+    Menlo, monospace;
 }
 
 @theme inline {

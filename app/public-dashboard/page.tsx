@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { Suspense, useState, useEffect, FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   submitComplaint,
@@ -31,7 +31,7 @@ function parseSection(value: string | null): PublicSection {
   return "submit";
 }
 
-export default function PublicDashboard() {
+function PublicDashboardContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -859,5 +859,17 @@ export default function PublicDashboard() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function PublicDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50" />
+      }
+    >
+      <PublicDashboardContent />
+    </Suspense>
   );
 }
