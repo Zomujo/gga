@@ -96,7 +96,7 @@ export function CaseDetailsModal({
   onRefreshAdmins,
   onUpdateStatus,
 }: CaseDetailsModalProps) {
-  const shortCaseId = activeComplaint.id.slice(0, 8);
+  const caseReference = activeComplaint.code || activeComplaint.id.slice(0, 8);
   const statusOptions: { value: ApiComplaint["status"]; label: string }[] = [
     { value: "pending", label: "Pending" },
     { value: "in_progress", label: "In Progress" },
@@ -223,7 +223,7 @@ export function CaseDetailsModal({
           <div>
             <p className="text-sm font-semibold text-gray-600">Case Details</p>
             <h2 className="text-2xl font-bold text-gray-900">
-              {shortCaseId}
+              {caseReference}
             </h2>
           </div>
           <button

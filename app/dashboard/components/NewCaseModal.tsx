@@ -1,13 +1,8 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import type { ComplaintFormState } from "../hooks/useComplaints";
-import {
-  categoryOptions,
-  assistiveDeviceOptions,
-  requestTypeOptions,
-  issueTypeOptions,
-} from "../utils/constants";
+import { categoryOptions } from "../utils/constants";
 
 interface LocationOption {
   value: string;
@@ -35,12 +30,23 @@ export function NewCaseModal({
   onSubmit,
   onClose,
 }: NewCaseModalProps) {
+  const [pickerOpen, setPickerOpen] = useState<"location" | "category" | null>(
+    null
+  );
+
+  const selectedLocationLabel =
+    locationOptions.find((opt) => opt.value === complaintForm.district)?.label ??
+    "Choose location";
+  const selectedCategoryLabel =
+    categoryOptions.find((opt) => opt.value === complaintForm.category)?.label ??
+    "Choose category";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            Submit New Complaint
+            Make a Report
           </h2>
           <button
             onClick={onClose}
@@ -51,70 +57,6 @@ export function NewCaseModal({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Complaint Type Selector */}
-          <div className="rounded-xl bg-blue-50 border border-blue-200 p-4">
-            <p className="text-sm font-semibold text-blue-900 mb-3">
-              Select submission type:
-            </p>
-            <div className="flex gap-3">
-              <label
-                className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-all ${
-                  complaintForm.complaintType === "general"
-                    ? "border-blue-600 bg-blue-100"
-                    : "border-gray-300 bg-white hover:border-blue-400"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="complaintType"
-                  value="general"
-                  checked={complaintForm.complaintType === "general"}
-                  onChange={(e) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      complaintType: e.target.value as "general" | "detailed",
-                    }))
-                  }
-                  className="sr-only"
-                />
-                <div className="text-center">
-                  <p className="font-semibold text-gray-900">General Report</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Basic information only
-                  </p>
-                </div>
-              </label>
-              <label
-                className={`flex-1 cursor-pointer rounded-lg border-2 p-3 transition-all ${
-                  complaintForm.complaintType === "detailed"
-                    ? "border-blue-600 bg-blue-100"
-                    : "border-gray-300 bg-white hover:border-blue-400"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="complaintType"
-                  value="detailed"
-                  checked={complaintForm.complaintType === "detailed"}
-                  onChange={(e) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      complaintType: e.target.value as "general" | "detailed",
-                    }))
-                  }
-                  className="sr-only"
-                />
-                <div className="text-center">
-                  <p className="font-semibold text-gray-900">Detailed Report</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Full information with personal details
-                  </p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Contact Information - Always required */}
           <div className="space-y-3 rounded-lg border border-gray-200 p-4">
             <h3 className="font-semibold text-gray-900">Contact Information</h3>
 
@@ -138,125 +80,28 @@ export function NewCaseModal({
             </label>
           </div>
 
-          {/* Additional Personal Information - Only for detailed */}
-          {complaintForm.complaintType === "detailed" && (
-            <div className="space-y-3 rounded-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900">
-                Additional Personal Details
-              </h3>
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">
-                  Full Name *
-                </span>
-                <input
-                  type="text"
-                  required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                  value={complaintForm.fullName}
-                  onChange={(e) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      fullName: e.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Age *
-                  </span>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    max="150"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                    value={complaintForm.age}
-                    onChange={(e) =>
-                      setComplaintForm((prev) => ({
-                        ...prev,
-                        age: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Gender *
-                  </span>
-                  <select
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                    value={complaintForm.gender}
-                    onChange={(e) =>
-                      setComplaintForm((prev) => ({
-                        ...prev,
-                        gender: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </label>
-              </div>
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">
-                  Caregiver Phone (Optional)
-                </span>
-                <input
-                  type="tel"
-                  placeholder="+233551234567"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                  value={complaintForm.caregiverPhoneNumber}
-                  onChange={(e) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      caregiverPhoneNumber: e.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-700">
-                  Language *
-                </span>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., English, Twi, Ga"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                  value={complaintForm.language}
-                  onChange={(e) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      language: e.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-          )}
-
           {/* Complaint Details */}
           <div className="space-y-3 rounded-lg border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900">Complaint Details</h3>
+            <h3 className="font-semibold text-gray-900">Report Details</h3>
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-700">
                   Location *
                 </span>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none sm:hidden"
+                  onClick={() => setPickerOpen("location")}
+                >
+                  <span className="truncate">
+                    {complaintForm.district ? selectedLocationLabel : "Choose location"}
+                  </span>
+                  <span className="text-gray-400">▾</span>
+                </button>
                 <select
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none sm:block"
                   value={complaintForm.district}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -278,9 +123,17 @@ export function NewCaseModal({
                 <span className="text-sm font-medium text-gray-700">
                   Category *
                 </span>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none sm:hidden"
+                  onClick={() => setPickerOpen("category")}
+                >
+                  <span className="truncate">{selectedCategoryLabel}</span>
+                  <span className="text-gray-400">▾</span>
+                </button>
                 <select
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none sm:block"
                   value={complaintForm.category}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -318,151 +171,6 @@ export function NewCaseModal({
                   }
                 />
               </label>
-            )}
-
-            {complaintForm.complaintType === "detailed" && (
-              <>
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Assistive Device Used *
-                  </span>
-                  <select
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                    value={complaintForm.assistiveDevice}
-                    onChange={(e) =>
-                      setComplaintForm((prev) => ({
-                        ...prev,
-                        assistiveDevice: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Choose device</option>
-                    {assistiveDeviceOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {complaintForm.assistiveDevice === "other" && (
-                  <label className="block space-y-1">
-                    <span className="text-sm font-medium text-gray-700">
-                      Specify Other Device *
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Please specify the assistive device"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                      value={complaintForm.otherAssistiveDevice}
-                      onChange={(e) =>
-                        setComplaintForm((prev) => ({
-                          ...prev,
-                          otherAssistiveDevice: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                )}
-
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Request Type *
-                  </span>
-                  <select
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                    value={complaintForm.requestType}
-                    onChange={(e) =>
-                      setComplaintForm((prev) => ({
-                        ...prev,
-                        requestType: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Choose request type</option>
-                    {requestTypeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {complaintForm.requestType === "other" && (
-                  <label className="block space-y-1">
-                    <span className="text-sm font-medium text-gray-700">
-                      Specify Other Request *
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Please specify the request type"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                      value={complaintForm.otherRequest}
-                      onChange={(e) =>
-                        setComplaintForm((prev) => ({
-                          ...prev,
-                          otherRequest: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                )}
-              </>
-            )}
-
-            {complaintForm.complaintType === "detailed" && (
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Issue Types * (select all that apply)
-                </span>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {issueTypeOptions.map((issue) => (
-                    <label
-                      key={issue.value}
-                      className="flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                        checked={complaintForm.issueTypes.includes(issue.value)}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setComplaintForm((prev) => ({
-                            ...prev,
-                            issueTypes: checked
-                              ? [...prev.issueTypes, issue.value]
-                              : prev.issueTypes.filter(
-                                  (t) => t !== issue.value
-                                ),
-                          }));
-                        }}
-                      />
-                      <span className="text-sm text-gray-700">
-                        {issue.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {complaintForm.issueTypes.includes("other") && (
-                  <input
-                    type="text"
-                    required
-                    placeholder="Please specify other issue type"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none mt-2"
-                    value={complaintForm.otherIssueType}
-                    onChange={(e) =>
-                      setComplaintForm((prev) => ({
-                        ...prev,
-                        otherIssueType: e.target.value,
-                      }))
-                    }
-                  />
-                )}
-              </div>
             )}
 
             <label className="block space-y-1">
@@ -507,10 +215,68 @@ export function NewCaseModal({
               className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:bg-blue-300"
               disabled={complaintSubmitting}
             >
-              {complaintSubmitting ? "Submitting..." : "Submit Complaint"}
+              {complaintSubmitting ? "Submitting..." : "Submit Report"}
             </button>
           </div>
         </form>
+
+        {pickerOpen && (
+          <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/30 p-4 sm:hidden">
+            <div className="mt-16 w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {pickerOpen === "location" ? "Choose Location" : "Choose Category"}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Select one option to continue.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(null)}
+                  className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+                {(pickerOpen === "location" ? locationOptions : categoryOptions).map(
+                  (opt) => {
+                    const value =
+                      pickerOpen === "location"
+                        ? complaintForm.district
+                        : complaintForm.category;
+                    const isActive = value === opt.value;
+
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                          isActive
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "text-gray-700"
+                        }`}
+                        onClick={() => {
+                          setComplaintForm((prev) => ({
+                            ...prev,
+                            [pickerOpen === "location" ? "district" : "category"]:
+                              opt.value,
+                          }));
+                          setPickerOpen(null);
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  }
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

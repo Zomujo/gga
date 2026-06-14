@@ -149,8 +149,6 @@ export function useComplaints({
       setComplaintStatus(null);
       setComplaintsError(null);
       try {
-        const isDetailed = complaintForm.complaintType === "detailed";
-
         const base = {
           phoneNumber: complaintForm.phoneNumber,
           district: complaintForm.district,
@@ -162,42 +160,11 @@ export function useComplaints({
           description: complaintForm.description || undefined,
         };
 
-        const navigatorPayload = {
-          ...base,
-          ...(isDetailed
-            ? {
-                fullName: complaintForm.fullName || undefined,
-                age: parseInt(complaintForm.age) || undefined,
-                gender: complaintForm.gender || undefined,
-                caregiverPhoneNumber:
-                  complaintForm.caregiverPhoneNumber || undefined,
-                language: complaintForm.language || undefined,
-                assistiveDevice: complaintForm.assistiveDevice || undefined,
-                otherAssistiveDevice:
-                  complaintForm.assistiveDevice === "other"
-                    ? complaintForm.otherAssistiveDevice || undefined
-                    : undefined,
-                issueTypes:
-                  complaintForm.issueTypes.length > 0
-                    ? complaintForm.issueTypes
-                    : undefined,
-                otherIssueType: complaintForm.issueTypes.includes("other")
-                  ? complaintForm.otherIssueType || undefined
-                  : undefined,
-                requestType: complaintForm.requestType || undefined,
-                otherRequest:
-                  complaintForm.requestType === "other"
-                    ? complaintForm.otherRequest || undefined
-                    : undefined,
-              }
-            : {}),
-        };
-
         const createPayload = base;
 
         const result =
           currentUser?.role === "navigator"
-            ? await submitComplaintByNavigator(token, navigatorPayload)
+            ? await submitComplaintByNavigator(token, base)
             : await submitComplaintApi(token, createPayload);
 
         await refreshComplaints();
