@@ -47,6 +47,11 @@ export default function PublicDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [publicStats, setPublicStats] = useState<PublicStats | null>(null);
   const [statsLocationId, setStatsLocationId] = useState<string>("");
+  const [communityLocationModalOpen, setCommunityLocationModalOpen] =
+    useState(false);
+  const [submitPickerOpen, setSubmitPickerOpen] = useState<
+    "location" | "category" | null
+  >(null);
   const [ticketNumber, setTicketNumber] = useState("");
   const [searching, setSearching] = useState(false);
   const [caseData, setCaseData] = useState<ApiComplaint | null>(null);
@@ -200,6 +205,16 @@ export default function PublicDashboard() {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
+  const selectedStatsLocationLabel =
+    locations.find((option) => option.value === statsLocationId)?.label ??
+    "All Locations";
+  const selectedSubmitLocationLabel =
+    locations.find((option) => option.value === form.district)?.label ??
+    "Choose location";
+  const selectedSubmitCategoryLabel =
+    categoryOptions.find((option) => option.value === form.category)?.label ??
+    "Choose category";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
       {/* Header */}
@@ -300,6 +315,17 @@ export default function PublicDashboard() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Location
                 </label>
+                <button
+                  type="button"
+                  disabled={locationsLoading || locations.length === 0}
+                  onClick={() => setSubmitPickerOpen("location")}
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 sm:hidden"
+                >
+                  <span className="truncate">
+                    {locationsLoading ? "Loading..." : selectedSubmitLocationLabel}
+                  </span>
+                  <span className="text-gray-400">▾</span>
+                </button>
                 <select
                   required
                   value={form.district}
@@ -307,7 +333,7 @@ export default function PublicDashboard() {
                     setForm((prev) => ({ ...prev, district: e.target.value }))
                   }
                   disabled={locationsLoading || locations.length === 0}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="hidden w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 sm:block"
                 >
                   {locations.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -327,13 +353,21 @@ export default function PublicDashboard() {
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Service Category
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setSubmitPickerOpen("category")}
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 sm:hidden"
+                >
+                  <span className="truncate">{selectedSubmitCategoryLabel}</span>
+                  <span className="text-gray-400">▾</span>
+                </button>
                 <select
                   required
                   value={form.category}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, category: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="hidden w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 sm:block"
                 >
                   {categoryOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -615,10 +649,18 @@ export default function PublicDashboard() {
               case details are protected for privacy.
             </p>
 
-            <div className="mb-6 flex items-center gap-3">
-              <label className="text-sm font-semibold text-gray-700">Location</label>
+            <div className="mb-6 flex justify-start">
+              <button
+                type="button"
+                className="flex w-full max-w-[16rem] items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm sm:hidden"
+                onClick={() => setCommunityLocationModalOpen(true)}
+              >
+                <span className="truncate">{selectedStatsLocationLabel}</span>
+                <span className="text-gray-400">▾</span>
+              </button>
               <select
-                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                aria-label="Community issues location filter"
+                className="hidden w-full max-w-[16rem] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm sm:block"
                 value={statsLocationId}
                 onChange={(e) => setStatsLocationId(e.target.value)}
               >
@@ -685,6 +727,123 @@ export default function PublicDashboard() {
           </div>
         )}
       </main>
+
+      {communityLocationModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:hidden"
+          onClick={() => setCommunityLocationModalOpen(false)}
+        >
+          <div
+            className="mt-24 w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  Choose Location
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Filter community issues by location.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCommunityLocationModalOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              {locations.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                    option.value === statsLocationId
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "text-gray-700"
+                  }`}
+                  onClick={() => {
+                    setStatsLocationId(option.value);
+                    setCommunityLocationModalOpen(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {submitPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:hidden"
+          onClick={() => setSubmitPickerOpen(null)}
+        >
+          <div
+            className="mt-24 w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  {submitPickerOpen === "location"
+                    ? "Choose Location"
+                    : "Choose Service Category"}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Select one option to continue.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubmitPickerOpen(null)}
+                className="rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              {(submitPickerOpen === "location" ? locations : categoryOptions).map(
+                (option) => {
+                  const currentValue =
+                    submitPickerOpen === "location"
+                      ? form.district
+                      : form.category;
+                  const active = option.value === currentValue;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                        active
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => {
+                        setForm((prev) => ({
+                          ...prev,
+                          [submitPickerOpen === "location"
+                            ? "district"
+                            : "category"]: option.value,
+                        }));
+                        setSubmitPickerOpen(null);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="mt-20 border-t border-white/30 bg-white/30 backdrop-blur-sm">

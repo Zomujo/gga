@@ -6,15 +6,10 @@ import {
   loginUser as loginUserApi,
   registerUser as registerUserApi,
   getLocations,
+  getPublicStats,
   type ApiLocation,
 } from "@/lib/api";
 import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
-
-const stats = [
-  { label: "Assemblies", value: "3" },
-  { label: "Active Cases", value: "80+" },
-  { label: "Citizens Served", value: "500+" },
-];
 
 const highlights = [
   "USSD-native reporting for any phone without data",
@@ -52,6 +47,19 @@ export default function LandingPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [locationOptions, setLocationOptions] = useState<ApiLocation[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
+  const [landingStatsLoading, setLandingStatsLoading] = useState(true);
+  const [landingStats, setLandingStats] = useState({
+    assemblies: 0,
+    activeCases: 0,
+    citizensServed: 0,
+  });
+  const [animatedStats, setAnimatedStats] = useState({
+    assemblies: 0,
+    activeCases: 0,
+    citizensServed: 0,
+  });
+  const [statsInView, setStatsInView] = useState(false);
+  const [statsAnimated, setStatsAnimated] = useState(false);
 
   useEffect(() => {
     const stored = loadAuth();
@@ -73,25 +81,105 @@ export default function LandingPage() {
   }, [router]);
 
   useEffect(() => {
-    const loadLocationOptions = async () => {
+    const loadLandingData = async () => {
       setLocationsLoading(true);
+      setLandingStatsLoading(true);
       try {
-        const response = await getLocations();
-        const rows = response.rows ?? [];
+        const [locationsResponse, publicStats] = await Promise.all([
+          getLocations(),
+          getPublicStats(),
+        ]);
+        const rows = locationsResponse.rows ?? [];
         setLocationOptions(rows);
         setForm((prev) => ({
           ...prev,
           district: prev.district || rows[0]?.id || "",
         }));
+        setLandingStats({
+          assemblies: rows.length,
+          activeCases: (publicStats.inProgress ?? 0) + (publicStats.pending ?? 0),
+          citizensServed: publicStats.totalCases ?? 0,
+        });
       } catch {
         setLocationOptions([]);
+        setLandingStats({
+          assemblies: 0,
+          activeCases: 0,
+          citizensServed: 0,
+        });
       } finally {
         setLocationsLoading(false);
+        setLandingStatsLoading(false);
       }
     };
 
-    loadLocationOptions();
+    loadLandingData();
   }, []);
+
+  useEffect(() => {
+    const checkStatsInView = () => {
+      const statSections = document.querySelectorAll("[data-landing-stats]");
+      const isVisible = Array.from(statSections).some((section) => {
+        const rect = section.getBoundingClientRect();
+        return rect.top <= window.innerHeight * 0.85 && rect.bottom >= 0;
+      });
+
+      if (isVisible) {
+        setStatsInView(true);
+      }
+    };
+
+    checkStatsInView();
+    window.addEventListener("scroll", checkStatsInView, { passive: true });
+    window.addEventListener("resize", checkStatsInView);
+
+    return () => {
+      window.removeEventListener("scroll", checkStatsInView);
+      window.removeEventListener("resize", checkStatsInView);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (landingStatsLoading || !statsInView || statsAnimated) return;
+
+    const start = performance.now();
+    const duration = 900;
+
+    const animate = (timestamp: number) => {
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      setAnimatedStats({
+        assemblies: Math.round(landingStats.assemblies * eased),
+        activeCases: Math.round(landingStats.activeCases * eased),
+        citizensServed: Math.round(landingStats.citizensServed * eased),
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setStatsAnimated(true);
+      }
+    };
+
+    const frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [landingStats, landingStatsLoading, statsAnimated, statsInView]);
+
+  const stats = [
+    {
+      label: "Assemblies",
+      value: animatedStats.assemblies.toLocaleString(),
+    },
+    {
+      label: "Active Cases",
+      value: animatedStats.activeCases.toLocaleString(),
+    },
+    {
+      label: "Citizens Served",
+      value: animatedStats.citizensServed.toLocaleString(),
+    },
+  ];
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -219,10 +307,6 @@ export default function LandingPage() {
         <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
           <section className="order-1 space-y-8 lg:space-y-10">
             <div className="space-y-5 sm:space-y-6">
-              <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-[11px] font-semibold text-white shadow-lg sm:px-4 sm:text-xs">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-white"></span>
-                Local Service Delivery & Inclusive Governance
-              </span>
               <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-7xl">
                 Connect citizens to{" "}
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
@@ -294,7 +378,10 @@ export default function LandingPage() {
                 ))}
               </ul>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                data-landing-stats
+              >
                 {stats.map((stat) => (
                   <div
                     key={stat.label}
@@ -534,7 +621,10 @@ export default function LandingPage() {
               ))}
             </ul>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              data-landing-stats
+            >
               {stats.map((stat) => (
                 <div
                   key={stat.label}

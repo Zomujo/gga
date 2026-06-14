@@ -99,8 +99,14 @@ export function EscalationsSection({
       </div>
 
       {activeStatusComplaint && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 p-4"
+          onClick={() => setStatusModalComplaintId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-gray-900">
