@@ -20,6 +20,7 @@ export interface ComplaintFormState {
   fullName: string;
   age: string;
   phoneNumber: string;
+  isAnonymous: boolean;
   caregiverPhoneNumber: string;
   category: string;
   district: string;
@@ -40,6 +41,7 @@ const initialFormState: ComplaintFormState = {
   fullName: "",
   age: "",
   phoneNumber: "",
+  isAnonymous: false,
   caregiverPhoneNumber: "",
   category: "",
   district: "",
@@ -173,6 +175,7 @@ export function useComplaints({
           phoneNumber: complaintForm.phoneNumber,
           district: complaintForm.district,
           category: complaintForm.category,
+          isAnonymous: complaintForm.isAnonymous,
           otherCategory:
             complaintForm.category === "other"
               ? complaintForm.otherCategory || undefined

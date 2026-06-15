@@ -18,6 +18,7 @@ interface NewCaseModalProps {
   complaintsError: string | null;
   locationOptions: LocationOption[];
   isLocationLocked?: boolean;
+  showAnonymousToggle?: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }
@@ -30,6 +31,7 @@ export function NewCaseModal({
   complaintsError,
   locationOptions,
   isLocationLocked = false,
+  showAnonymousToggle = false,
   onSubmit,
   onClose,
 }: NewCaseModalProps) {
@@ -79,7 +81,7 @@ export function NewCaseModal({
                 required
                 placeholder="+233551234567"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                value={complaintForm.phoneNumber}
+                value={complaintForm.phoneNumber ?? ""}
                 onChange={(e) =>
                   setComplaintForm((prev) => ({
                     ...prev,
@@ -88,6 +90,31 @@ export function NewCaseModal({
                 }
               />
             </label>
+
+            {showAnonymousToggle && (
+              <label className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                <input
+                  type="checkbox"
+                  checked={Boolean(complaintForm.isAnonymous)}
+                  onChange={(e) =>
+                    setComplaintForm((prev) => ({
+                      ...prev,
+                      isAnonymous: e.target.checked,
+                    }))
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Report anonymously
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Hide your personal details from the case in the normal
+                    workflow.
+                  </p>
+                </div>
+              </label>
+            )}
           </div>
 
           {/* Complaint Details */}
@@ -115,7 +142,7 @@ export function NewCaseModal({
                 <select
                   required
                   className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500 sm:block"
-                  value={complaintForm.district}
+                  value={complaintForm.district ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
                       ...prev,
@@ -156,7 +183,7 @@ export function NewCaseModal({
                 <select
                   required
                   className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none sm:block"
-                  value={complaintForm.category}
+                  value={complaintForm.category ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
                       ...prev,
@@ -184,7 +211,7 @@ export function NewCaseModal({
                   required
                   placeholder="Please specify the category"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                  value={complaintForm.otherCategory}
+                  value={complaintForm.otherCategory ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
                       ...prev,
@@ -202,7 +229,7 @@ export function NewCaseModal({
               <textarea
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                 rows={3}
-                value={complaintForm.description}
+                value={complaintForm.description ?? ""}
                 onChange={(e) =>
                   setComplaintForm((prev) => ({
                     ...prev,

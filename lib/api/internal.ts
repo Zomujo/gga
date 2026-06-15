@@ -162,6 +162,7 @@ export async function submitComplaintByNavigator(
     assistiveDevice?: string;
     otherAssistiveDevice?: string;
     phoneNumber: string;
+    isAnonymous?: boolean;
     caregiverPhoneNumber?: string;
     language?: string;
     category: string;
@@ -186,6 +187,7 @@ export async function submitComplaintByNavigator(
       phoneNumber: toGhanaPhoneE164(input.phoneNumber),
       locationId,
       category: toBackendCategory(input.category),
+      isAnonymous: input.isAnonymous,
       otherCategory: input.otherCategory,
       description: input.description,
       channel: "PORTAL",

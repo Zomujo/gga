@@ -528,6 +528,7 @@ export default function DashboardClient() {
           complaintsError={complaintsError}
           locationOptions={locationOptions}
           isLocationLocked={currentUser.role === "navigator"}
+          showAnonymousToggle={currentUser.role === "navigator"}
           onSubmit={handleComplaintSubmitWithClose}
           onClose={handleCloseNewCaseModal}
         />

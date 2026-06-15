@@ -126,6 +126,7 @@ export interface RawCase {
   channel?: string;
   locationId?: string;
   attachmentUrl?: string;
+  isAnonymous?: boolean;
   expectedResolutionDate?: string;
   respondedAt?: string;
   escalatedAt?: string;
@@ -160,6 +161,7 @@ export interface ApiComplaint {
   assistiveDevice?: string;
   otherAssistiveDevice?: string | null;
   phoneNumber: string;
+  isAnonymous?: boolean;
   caregiverPhoneNumber?: string;
   language?: string;
   category: FrontendCategory;
@@ -475,6 +477,7 @@ export function mapCase(raw: RawCase): ApiComplaint {
     code: raw.code,
     fullName: raw.fullName,
     phoneNumber: toGhanaPhoneDisplay(raw.phoneNumber),
+    isAnonymous: raw.isAnonymous ?? false,
     category: fromBackendCategory(raw.category),
     otherCategory: raw.otherCategory ?? null,
     district: getDistrictFromLocation(raw.locationId),

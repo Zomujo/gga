@@ -239,7 +239,11 @@ export function CaseDetailsModal({
             <p className="text-xs uppercase tracking-wide text-gray-500">
               Phone Number
             </p>
-            <p className="text-gray-900">{activeComplaint.phoneNumber}</p>
+            <p className="text-gray-900">
+              {activeComplaint.isAnonymous
+                ? "Hidden for anonymous report"
+                : activeComplaint.phoneNumber || "—"}
+            </p>
           </div>
 
           <div>
@@ -263,7 +267,7 @@ export function CaseDetailsModal({
             </p>
           </div>
 
-          {activeComplaint.fullName && (
+          {!activeComplaint.isAnonymous && activeComplaint.fullName && (
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500">
                 Full Name
@@ -381,7 +385,9 @@ export function CaseDetailsModal({
             </p>
           </div>
 
-          {activeComplaint.createdById && !isDistrictOfficer && (
+          {activeComplaint.createdById &&
+            !activeComplaint.isAnonymous &&
+            !isDistrictOfficer && (
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500">
                 Created By
