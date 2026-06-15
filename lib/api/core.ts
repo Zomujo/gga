@@ -20,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-type BackendRole = "STAFF_OFFICER" | "ADMIN" | "FIELD_AGENT";
+type BackendRole = "STAFF_OFFICER" | "ADMIN" | "FIELD_OFFICER" | "SUPER_ADMIN";
 export type FrontendRole = "district_officer" | "admin" | "navigator";
 
 type BackendStatus =
@@ -85,6 +85,8 @@ export interface RawLocation {
   id: string;
   name: string;
   region?: string;
+  type?: "METRO_DISTRICT" | "TOWN" | string;
+  parentLocationId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -93,6 +95,8 @@ export interface ApiLocation {
   id: string;
   name: string;
   region?: string;
+  type?: "METRO_DISTRICT" | "TOWN" | string;
+  parentLocationId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -103,6 +107,7 @@ export interface RawUser {
   fullName: string;
   role: BackendRole | string;
   locationId?: string | null;
+  phoneNumber?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -139,6 +144,7 @@ export interface ApiUser {
   role: FrontendRole;
   district?: string | null;
   locationId?: string | null;
+  phoneNumber?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -196,13 +202,13 @@ const DISTRICT_FALLBACKS = ["assembly_a", "assembly_b", "assembly_c"];
 
 export function toBackendRole(role: FrontendRole): BackendRole {
   if (role === "admin") return "ADMIN";
-  if (role === "navigator") return "FIELD_AGENT";
+  if (role === "navigator") return "FIELD_OFFICER";
   return "STAFF_OFFICER";
 }
 
 function fromBackendRole(role: string): FrontendRole {
   if (role === "ADMIN") return "admin";
-  if (role === "FIELD_AGENT") return "navigator";
+  if (role === "FIELD_OFFICER") return "navigator";
   return "district_officer";
 }
 
@@ -381,6 +387,7 @@ export function mapUser(raw: RawUser): ApiUser {
     role: fromBackendRole(raw.role),
     district: raw.locationId ? getDistrictFromLocation(raw.locationId) : null,
     locationId: raw.locationId ?? null,
+    phoneNumber: raw.phoneNumber ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -417,6 +424,8 @@ export function mapLocation(raw: RawLocation): ApiLocation {
     id: raw.id,
     name: raw.name,
     region: raw.region,
+    type: raw.type,
+    parentLocationId: raw.parentLocationId ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

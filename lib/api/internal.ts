@@ -48,6 +48,8 @@ export async function registerUser(input: {
   email: string;
   password: string;
   fullName: string;
+  phoneNumber?: string;
+  departmentId?: string;
   role?: FrontendRole;
   district?: string;
 }): Promise<AuthResponse> {
@@ -58,6 +60,8 @@ export async function registerUser(input: {
       email: input.email,
       password: input.password,
       fullName: input.fullName,
+      phoneNumber: input.phoneNumber,
+      departmentId: input.departmentId,
       role: toBackendRole(input.role ?? "navigator"),
       locationId,
     },

@@ -32,14 +32,19 @@ const quickSteps = [
   },
 ];
 
+const FIELD_OFFICER_DEFAULT_DEPARTMENT_ID =
+  "860441fe-cfb6-4c52-90af-6eb29e1e06ba";
+
 export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({
     fullName: "",
+    phoneNumber: "",
     email: "",
     password: "",
+    metroDistrict: "",
     district: "",
   });
   const [authLoading, setAuthLoading] = useState(false);
@@ -90,9 +95,23 @@ export default function LandingPage() {
         ]);
         const rows = locationsResponse.rows ?? [];
         setLocationOptions(rows);
+        const metroDistricts = rows.filter(
+          (location) => location.type === "METRO_DISTRICT"
+        );
+        const defaultMetroDistrictId =
+          metroDistricts[0]?.id ?? rows[0]?.parentLocationId ?? rows[0]?.id ?? "";
+        const defaultTownId =
+          rows.find(
+            (location) =>
+              location.type === "TOWN" &&
+              location.parentLocationId === defaultMetroDistrictId
+          )?.id ??
+          rows.find((location) => location.type === "TOWN")?.id ??
+          "";
         setForm((prev) => ({
           ...prev,
-          district: prev.district || rows[0]?.id || "",
+          metroDistrict: prev.metroDistrict || defaultMetroDistrictId,
+          district: prev.district || defaultTownId,
         }));
         setLandingStats({
           assemblies: rows.length,
@@ -180,6 +199,15 @@ export default function LandingPage() {
     },
   ];
 
+  const metroDistrictOptions = locationOptions.filter(
+    (location) => location.type === "METRO_DISTRICT"
+  );
+  const townOptions = locationOptions.filter(
+    (location) =>
+      location.type === "TOWN" &&
+      location.parentLocationId === form.metroDistrict
+  );
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (authLoading) return;
@@ -201,6 +229,8 @@ export default function LandingPage() {
               email: form.email,
               password: form.password,
               fullName: form.fullName,
+              phoneNumber: form.phoneNumber,
+              departmentId: FIELD_OFFICER_DEFAULT_DEPARTMENT_ID,
               role: "navigator",
               district: form.district,
             });
@@ -359,7 +389,58 @@ export default function LandingPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-gray-700">
-                      Location
+                      Phone number
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={form.phoneNumber}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          phoneNumber: event.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      placeholder="+233001234567"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Metro / District
+                    </label>
+                    <select
+                      required
+                      value={form.metroDistrict}
+                      onChange={(event) => {
+                        const nextMetroDistrict = event.target.value;
+                        const nextTownId =
+                          locationOptions.find(
+                            (location) =>
+                              location.type === "TOWN" &&
+                              location.parentLocationId === nextMetroDistrict
+                          )?.id ?? "";
+                        setForm((prev) => ({
+                          ...prev,
+                          metroDistrict: nextMetroDistrict,
+                          district: nextTownId,
+                        }));
+                      }}
+                      disabled={locationsLoading || metroDistrictOptions.length === 0}
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    >
+                      {metroDistrictOptions.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Town
                     </label>
                     <select
                       required
@@ -370,10 +451,10 @@ export default function LandingPage() {
                           district: event.target.value,
                         }))
                       }
-                      disabled={locationsLoading || locationOptions.length === 0}
+                      disabled={locationsLoading || townOptions.length === 0}
                       className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     >
-                      {locationOptions.map((location) => (
+                      {townOptions.map((location) => (
                         <option key={location.id} value={location.id}>
                           {location.name}
                         </option>
@@ -382,9 +463,11 @@ export default function LandingPage() {
                     <p className="mt-2 text-xs text-gray-500">
                       New public signups are created as Field Agents.
                     </p>
-                    {!locationsLoading && locationOptions.length === 0 && (
+                    {!locationsLoading &&
+                      (metroDistrictOptions.length === 0 ||
+                        townOptions.length === 0) && (
                       <p className="mt-2 text-xs text-amber-700">
-                        No locations available yet. Ask an admin to create locations first.
+                        No metro/district and town locations are available yet. Ask an admin to configure them first.
                       </p>
                     )}
                   </div>
