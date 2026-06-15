@@ -20,15 +20,15 @@ const highlights = [
 const quickSteps = [
   {
     title: "1. Create an account",
-    copy: "Register as a field agent to access the operations portal.",
+    copy: "Sign up as a field agent to join the community reporting network.",
   },
   {
-    title: "2. Capture reports",
-    copy: "Use USSD or dashboard to log service delivery issues from citizens.",
+    title: "2. Submit reports",
+    copy: "Use the dashboard to log service delivery issues from your community.",
   },
   {
     title: "3. Track and resolve",
-    copy: "Assign cases, track progress, and close with documented outcomes.",
+    copy: "Follow case progress and help drive documented outcomes.",
   },
 ];
 
@@ -36,7 +36,6 @@ export default function LandingPage() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -235,7 +234,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
       <header className="border-b border-white/20 bg-white/40 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-auto items-center justify-center overflow-hidden sm:h-12">
                 <img
@@ -245,60 +244,6 @@ export default function LandingPage() {
                 />
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-200 bg-white/80 text-emerald-700 shadow-sm sm:hidden"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {mobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-          <div
-            className={`${
-              mobileMenuOpen ? "mt-4 grid" : "hidden"
-            } gap-3 sm:mt-0 sm:flex sm:items-center sm:justify-end sm:gap-4`}
-          >
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                router.push("/public-dashboard");
-              }}
-              className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto sm:py-2"
-            >
-              Citizen Portal
-            </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                router.push("/track");
-              }}
-              className="w-full rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 sm:w-auto sm:py-2"
-            >
-              Track Report
-            </button>
           </div>
         </div>
       </header>
@@ -315,54 +260,13 @@ export default function LandingPage() {
                 local assemblies.
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-xl">
-                GGA Governance connects citizen reporting to structured assembly
-                response. Every report becomes a trackable case with clear
-                ownership and visible outcomes.
+                GGA Governance equips community stewards to log local issues,
+                route them into structured assembly response, and keep outcomes
+                visible.
               </p>
             </div>
 
             <div className="hidden lg:block lg:space-y-10">
-              <div className="grid gap-3 sm:flex sm:flex-wrap">
-                <button
-                  onClick={() => router.push("/public-dashboard")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 sm:w-auto"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Report an Issue
-                </button>
-                <button
-                  onClick={() => router.push("/track")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg hover:bg-emerald-50 sm:w-auto"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  Track My Report
-                </button>
-              </div>
-
               <ul className="space-y-4">
                 {highlights.map((item, index) => (
                   <li key={item} className="group flex items-start gap-4">
@@ -565,47 +469,6 @@ export default function LandingPage() {
           </section>
 
           <section className="order-3 space-y-8 lg:hidden">
-            <div className="grid gap-3 sm:flex sm:flex-wrap">
-              <button
-                onClick={() => router.push("/public-dashboard")}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-700 sm:w-auto"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Report an Issue
-              </button>
-              <button
-                onClick={() => router.push("/track")}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 text-sm font-bold text-emerald-600 shadow-lg hover:bg-emerald-50 sm:w-auto"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                Track My Report
-              </button>
-            </div>
-
             <ul className="space-y-4">
               {highlights.map((item, index) => (
                 <li key={item} className="group flex items-start gap-4">
