@@ -118,6 +118,23 @@ export function CaseDetailsModal({
     );
   };
 
+  const getAssignedToDepartment = () => {
+    if (activeComplaint.assignedToId === currentUser?.id) {
+      return currentUser.departmentName ?? null;
+    }
+
+    return (
+      districtOfficers.find((d) => d.id === activeComplaint.assignedToId)
+        ?.departmentName ||
+      navigators.find((n) => n.id === activeComplaint.assignedToId)
+        ?.departmentName ||
+      admins.find((a) => a.id === activeComplaint.assignedToId)
+        ?.departmentName ||
+      activeComplaint.assignedTo?.departmentName ||
+      null
+    );
+  };
+
   const getCreatedByName = () => {
     if (activeComplaint.createdById === currentUser?.id) {
       return `${currentUser.fullName} (You)`;
@@ -425,6 +442,13 @@ export function CaseDetailsModal({
                   ? "Loading..."
                   : getAssignedToName()}
               </p>
+              {(!activeComplaint.assignedToId ||
+                !assignedLoadingIds?.[activeComplaint.assignedToId]) &&
+                getAssignedToDepartment() && (
+                  <p className="text-sm text-gray-500">
+                    Department: {getAssignedToDepartment()}
+                  </p>
+                )}
             </div>
           )}
 

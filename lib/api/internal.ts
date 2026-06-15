@@ -241,6 +241,38 @@ export async function getDepartments(
   return { rows: page.rows.map(mapDepartment) };
 }
 
+export async function createDepartment(
+  token: string,
+  input: { name: string; scope?: "DISTRICT" | "MUNICIPAL" }
+): Promise<ApiDepartment> {
+  const payload = await request<RawApiSuccess<RawDepartment>>("/departments", {
+    method: "POST",
+    token,
+    body: input,
+  });
+  return mapDepartment(unwrapData<RawDepartment>(payload));
+}
+
+export async function updateDepartment(
+  token: string,
+  departmentId: string,
+  input: {
+    name?: string;
+    scope?: "DISTRICT" | "MUNICIPAL";
+    isActive?: boolean;
+  }
+): Promise<ApiDepartment> {
+  const payload = await request<RawApiSuccess<RawDepartment>>(
+    `/departments/${departmentId}`,
+    {
+      method: "PATCH",
+      token,
+      body: input,
+    }
+  );
+  return mapDepartment(unwrapData<RawDepartment>(payload));
+}
+
 export async function assignComplaint(
   token: string,
   complaintId: string,
@@ -573,7 +605,11 @@ export async function getLocations(): Promise<{ rows: ApiLocation[] }> {
 
 export async function createLocation(
   token: string,
-  input: { name: string; region?: string }
+  input: {
+    name: string;
+    type: "METRO_DISTRICT" | "TOWN";
+    parentLocationId?: string;
+  }
 ): Promise<ApiLocation> {
   const payload = await request<RawApiSuccess<RawLocation>>("/locations", {
     method: "POST",

@@ -28,6 +28,8 @@ export default function DashboardClient() {
     isNavigator,
     isDistrictOfficer,
   } = useAuth();
+  const isSuperAdmin = currentUser?.role === "super_admin";
+  const adminBasePath = isSuperAdmin ? "/super-admin" : "/admin";
 
   const [activeTab, setActiveTab] = useState("cases");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -36,22 +38,30 @@ export default function DashboardClient() {
   const [hasInitializedLocationFilter, setHasInitializedLocationFilter] =
     useState(false);
   const [locationOptions, setLocationOptions] = useState<
-    { value: string; label: string; parentLocationId?: string | null }[]
+    {
+      value: string;
+      label: string;
+      type?: string;
+      parentLocationId?: string | null;
+    }[]
   >([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [creatingLocation, setCreatingLocation] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
-  const [newLocationRegion, setNewLocationRegion] = useState("");
+  const [newLocationType, setNewLocationType] = useState<
+    "METRO_DISTRICT" | "TOWN"
+  >("METRO_DISTRICT");
+  const [newLocationParentId, setNewLocationParentId] = useState("");
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
       if (path.endsWith("/dashboard")) return "staff_dashboard";
       return "cases";
     }
-    if (path === "/admin/dashboard") return "monitoring";
-    if (path === "/admin/cases") return "cases";
-    if (path === "/admin/locations") return "locations";
+    if (path.endsWith("/dashboard")) return "monitoring";
+    if (path.endsWith("/cases")) return "cases";
+    if (path.endsWith("/locations")) return "locations";
     return "monitoring";
   }, []);
 
@@ -62,6 +72,7 @@ export default function DashboardClient() {
       const options = (response.rows ?? []).map((location: ApiLocation) => ({
         value: location.id,
         label: location.name,
+        type: location.type,
         parentLocationId: location.parentLocationId ?? null,
       }));
       setLocationOptions(options);
@@ -91,9 +102,9 @@ export default function DashboardClient() {
   } = useMonitoring({ token, currentUser });
 
   const refreshStatsForAdmin = useCallback(() => {
-    if (!token || currentUser?.role !== "admin") return;
+    if (!token || !isAdmin) return;
     refreshStats(adminDistrict);
-  }, [token, currentUser?.role, refreshStats, adminDistrict]);
+  }, [token, isAdmin, refreshStats, adminDistrict]);
 
   const {
     liveComplaints,
@@ -138,20 +149,31 @@ export default function DashboardClient() {
 
   const handleCreateLocation = useCallback(async () => {
     if (!token || !newLocationName.trim()) return;
+    if (newLocationType === "TOWN" && !newLocationParentId) {
+      setLocationError("Select a metro/district before creating a town.");
+      return;
+    }
     setCreatingLocation(true);
     try {
       const created = await createLocation(token, {
         name: newLocationName.trim(),
-        region: newLocationRegion.trim() || undefined,
+        type: newLocationType,
+        parentLocationId:
+          newLocationType === "TOWN" ? newLocationParentId : undefined,
       });
       await loadLocations();
-      setAdminDistrict(created.id);
+      if (created.type === "METRO_DISTRICT") {
+        setAdminDistrict(created.id);
+      }
       setNewLocationName("");
-      setNewLocationRegion("");
+      setNewLocationType("METRO_DISTRICT");
+      setNewLocationParentId("");
       setLocationError(null);
-      refreshStats(created.id);
-      refreshNavigatorUpdates(created.id);
-      refreshComplaints(created.id, 1, complaintsPageSize);
+      if (created.type === "METRO_DISTRICT") {
+        refreshStats(created.id);
+        refreshNavigatorUpdates(created.id);
+        refreshComplaints(created.id, 1, complaintsPageSize);
+      }
     } catch (error) {
       setLocationError(
         error instanceof Error ? error.message : "Failed to create location"
@@ -162,7 +184,8 @@ export default function DashboardClient() {
   }, [
     token,
     newLocationName,
-    newLocationRegion,
+    newLocationType,
+    newLocationParentId,
     loadLocations,
     refreshStats,
     refreshNavigatorUpdates,
@@ -242,7 +265,7 @@ export default function DashboardClient() {
     } else {
       refreshComplaints();
     }
-    if (currentUser?.role === "admin") {
+    if (isAdmin) {
       refreshStatsForAdmin();
       refreshNavigatorUpdates(adminDistrict);
       refreshOverdueComplaints();
@@ -255,7 +278,6 @@ export default function DashboardClient() {
     loadLocations,
     currentUser?.role,
     refreshComplaints,
-    refreshStats,
     refreshNavigatorUpdates,
     refreshOverdueComplaints,
     fetchNavigators,
@@ -263,16 +285,21 @@ export default function DashboardClient() {
     fetchAdmins,
     refreshStatsForAdmin,
     adminDistrict,
+    isAdmin,
   ]);
 
   useEffect(() => {
     if (!currentUser) return;
-    const resolvedTab = getTabFromPath(pathname, currentUser.role === "admin");
+    const resolvedTab = getTabFromPath(pathname, isAdmin);
     setActiveTab(resolvedTab);
-  }, [pathname, currentUser, getTabFromPath]);
+  }, [pathname, isAdmin, currentUser, getTabFromPath]);
 
   useEffect(() => {
     if (pathname !== "/dashboard") return;
+    if (currentUser?.role === "super_admin") {
+      router.replace("/super-admin/dashboard");
+      return;
+    }
     if (currentUser?.role === "admin") {
       router.replace("/admin/dashboard");
       return;
@@ -291,9 +318,9 @@ export default function DashboardClient() {
       setActiveTab(tab);
       const routeMap: Record<string, string> = isAdmin
         ? {
-            monitoring: "/admin/dashboard",
-            cases: "/admin/cases",
-            locations: "/admin/locations",
+            monitoring: `${adminBasePath}/dashboard`,
+            cases: `${adminBasePath}/cases`,
+            locations: `${adminBasePath}/locations`,
           }
         : currentUser?.role === "district_officer"
         ? {
@@ -308,12 +335,12 @@ export default function DashboardClient() {
         router.push(nextRoute);
       }
     },
-    [isAdmin, currentUser?.role, pathname, router]
+    [isAdmin, adminBasePath, currentUser?.role, pathname, router]
   );
 
   // Refresh monitoring data when tab changes to monitoring
   useEffect(() => {
-    if (activeTab === "monitoring" && token && currentUser?.role === "admin") {
+    if (activeTab === "monitoring" && token && isAdmin) {
       refreshStatsForAdmin();
       refreshNavigatorUpdates(adminDistrict);
       refreshOverdueComplaints();
@@ -321,7 +348,7 @@ export default function DashboardClient() {
   }, [
     activeTab,
     token,
-    currentUser?.role,
+    isAdmin,
     refreshStatsForAdmin,
     refreshNavigatorUpdates,
     refreshOverdueComplaints,
@@ -339,7 +366,7 @@ export default function DashboardClient() {
     (district: string) => {
       setAdminDistrict(district);
       handleCloseCaseDetailsModal();
-      if (currentUser?.role === "admin") {
+      if (isAdmin) {
         refreshStats(district);
         refreshNavigatorUpdates(district);
         // Reset to page 1 when changing district
@@ -348,7 +375,7 @@ export default function DashboardClient() {
     },
     [
       handleCloseCaseDetailsModal,
-      currentUser?.role,
+      isAdmin,
       refreshStats,
       refreshNavigatorUpdates,
       refreshComplaints,
@@ -448,9 +475,11 @@ export default function DashboardClient() {
             locationsLoading={locationsLoading}
             creatingLocation={creatingLocation}
             newLocationName={newLocationName}
-            newLocationRegion={newLocationRegion}
+            newLocationType={newLocationType}
+            newLocationParentId={newLocationParentId}
             onNewLocationNameChange={setNewLocationName}
-            onNewLocationRegionChange={setNewLocationRegion}
+            onNewLocationTypeChange={setNewLocationType}
+            onNewLocationParentIdChange={setNewLocationParentId}
             onCreateLocation={handleCreateLocation}
           />
         ) : null;

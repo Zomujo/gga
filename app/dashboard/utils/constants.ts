@@ -3,6 +3,7 @@ export const tabs = [
   { id: "staff_dashboard", label: "My Dashboard", mobileLabel: "Mine" },
   { id: "cases", label: "Cases", mobileLabel: "Cases" },
   { id: "locations", label: "Locations", mobileLabel: "Places" },
+  { id: "departments", label: "Departments", mobileLabel: "Depts" },
 ];
 
 export const baseFlow = [

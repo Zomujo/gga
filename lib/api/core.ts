@@ -21,7 +21,11 @@ export class ApiError extends Error {
 }
 
 type BackendRole = "STAFF_OFFICER" | "ADMIN" | "FIELD_OFFICER" | "SUPER_ADMIN";
-export type FrontendRole = "district_officer" | "admin" | "navigator";
+export type FrontendRole =
+  | "district_officer"
+  | "admin"
+  | "navigator"
+  | "super_admin";
 
 type BackendStatus =
   | "RECEIVED"
@@ -116,6 +120,7 @@ export interface RawUser {
 export interface RawDepartment {
   id: string;
   name: string;
+  scope?: "DISTRICT" | "MUNICIPAL" | string | null;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -166,6 +171,7 @@ export interface ApiUser {
 export interface ApiDepartment {
   id: string;
   name: string;
+  scope?: "DISTRICT" | "MUNICIPAL" | string | null;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -266,12 +272,14 @@ export function isValidGhanaPhoneInput(input?: string | null): boolean {
 }
 
 export function toBackendRole(role: FrontendRole): BackendRole {
+  if (role === "super_admin") return "SUPER_ADMIN";
   if (role === "admin") return "ADMIN";
   if (role === "navigator") return "FIELD_OFFICER";
   return "STAFF_OFFICER";
 }
 
 function fromBackendRole(role: string): FrontendRole {
+  if (role === "SUPER_ADMIN") return "super_admin";
   if (role === "ADMIN") return "admin";
   if (role === "FIELD_OFFICER") return "navigator";
   return "district_officer";
@@ -540,6 +548,7 @@ export function mapDepartment(raw: RawDepartment): ApiDepartment {
   return {
     id: raw.id,
     name: raw.name,
+    scope: raw.scope ?? null,
     isActive: raw.isActive,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,

@@ -69,7 +69,9 @@ export default function LandingPage() {
   useEffect(() => {
     const stored = loadAuth();
     if (stored) {
-      if (stored.user.role === "admin") {
+      if (stored.user.role === "super_admin") {
+        router.replace("/super-admin/dashboard");
+      } else if (stored.user.role === "admin") {
         router.replace("/admin/dashboard");
       } else if (stored.user.role === "district_officer") {
         router.replace("/staff-officer/cases");
@@ -245,7 +247,9 @@ export default function LandingPage() {
             });
 
       saveAuth(payload.accessToken, payload.user);
-      if (payload.user.role === "admin") {
+      if (payload.user.role === "super_admin") {
+        router.push("/super-admin/dashboard");
+      } else if (payload.user.role === "admin") {
         router.push("/admin/dashboard");
       } else if (payload.user.role === "district_officer") {
         router.push("/staff-officer/cases");

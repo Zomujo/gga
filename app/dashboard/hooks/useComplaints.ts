@@ -81,6 +81,8 @@ export function useComplaints({
   onStatsRefresh,
   adminDistrict,
 }: UseComplaintsOptions) {
+  const isAdminLike =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const [liveComplaints, setLiveComplaints] = useState<ApiComplaint[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [complaintsError, setComplaintsError] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export function useComplaints({
             page: resolvedPage,
             pageSize: resolvedPageSize,
           };
-        if (currentUser?.role === "admin" && resolvedAdminDistrict) {
+        if (isAdminLike && resolvedAdminDistrict) {
           options.district = resolvedAdminDistrict;
         }
         const response = await getComplaints(token, options);
@@ -156,7 +158,7 @@ export function useComplaints({
     },
     [
       token,
-      currentUser?.role,
+      isAdminLike,
       adminDistrict,
       complaintsPage,
       complaintsPageSize,
@@ -289,7 +291,7 @@ export function useComplaints({
           kind: "success",
           message: `Status updated to ${getStatusLabel(finalStatus)}.`,
         });
-        if (currentUser?.role === "admin") {
+        if (isAdminLike) {
           onStatsRefresh?.();
         }
       } catch (error) {
@@ -306,15 +308,15 @@ export function useComplaints({
         setStatusUpdatingId(null);
       }
     },
-    [token, liveComplaints, currentUser, onStatsRefresh]
+    [token, liveComplaints, currentUser, onStatsRefresh, isAdminLike]
   );
 
   const escalatedToMe = useMemo(() => {
-    if (!currentUser || currentUser.role !== "admin") return [];
+    if (!currentUser || !isAdminLike) return [];
     return liveComplaints.filter(
       (c) => c.status === "escalated" && c.assignedToId === currentUser.id
     );
-  }, [liveComplaints, currentUser]);
+  }, [liveComplaints, currentUser, isAdminLike]);
 
   const filteredComplaints = useMemo(() => {
     let complaints = liveComplaints;
@@ -371,7 +373,7 @@ export function useComplaints({
       if (!token) return;
 
       const canFetchUsersById =
-        currentUser?.role === "admin" || currentUser?.role === "navigator";
+        isAdminLike || currentUser?.role === "navigator";
 
       try {
         const full = await getComplaint(token, id);
@@ -423,7 +425,7 @@ export function useComplaints({
         );
       }
     },
-    [token, currentUser?.role]
+    [token, currentUser?.role, isAdminLike]
   );
 
   const closeCaseDetailsModal = useCallback(() => {

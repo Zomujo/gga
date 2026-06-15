@@ -25,6 +25,8 @@ export function useEscalation({
   onSuccess,
   onStatsRefresh,
 }: UseEscalationOptions) {
+  const isAdminLike =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const [escalationModal, setEscalationModal] = useState(false);
   const [targetAdmin, setTargetAdmin] = useState("");
   const [escalationReason, setEscalationReason] = useState("");
@@ -39,10 +41,7 @@ export function useEscalation({
 
   const fetchAdmins = useCallback(async () => {
     if (!token) return;
-    if (
-      currentUser?.role !== "admin" &&
-      currentUser?.role !== "district_officer"
-    )
+    if (!isAdminLike && currentUser?.role !== "district_officer")
       return;
     setAdminsLoading(true);
     try {
@@ -58,7 +57,7 @@ export function useEscalation({
     } finally {
       setAdminsLoading(false);
     }
-  }, [token, currentUser?.role]);
+  }, [token, isAdminLike]);
 
   const handleOpenEscalationModal = useCallback(() => {
     setEscalationModal(true);
@@ -99,7 +98,7 @@ export function useEscalation({
       setEscalationModal(false);
       setTargetAdmin("");
       setEscalationReason("");
-      if (currentUser?.role === "admin") {
+      if (isAdminLike) {
         onStatsRefresh?.();
       }
     } catch (error) {
@@ -120,7 +119,7 @@ export function useEscalation({
     targetAdmin,
     escalationReason,
     admins,
-    currentUser?.role,
+    isAdminLike,
     onComplaintUpdate,
     onSuccess,
     onStatsRefresh,

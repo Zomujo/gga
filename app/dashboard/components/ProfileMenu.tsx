@@ -21,7 +21,9 @@ export function ProfileMenu({
   isLoading,
 }: ProfileMenuProps) {
   const roleLabel =
-    currentUser.role === "district_officer"
+    currentUser.role === "super_admin"
+      ? "Super Admin"
+      : currentUser.role === "district_officer"
       ? "Staff Officer"
       : currentUser.role === "navigator"
       ? "Field Agent"

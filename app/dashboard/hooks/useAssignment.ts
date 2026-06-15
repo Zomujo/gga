@@ -27,6 +27,8 @@ export function useAssignment({
   onSuccess,
   onStatsRefresh,
 }: UseAssignmentOptions) {
+  const isAdminLike =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const [assignmentModal, setAssignmentModal] = useState(false);
   const [assignee, setAssignee] = useState("");
   const [expectedResolutionDate, setExpectedResolutionDate] = useState("");
@@ -55,10 +57,7 @@ export function useAssignment({
 
   const fetchDistrictOfficers = useCallback(async () => {
     if (!token) return;
-    if (
-      currentUser?.role !== "admin" &&
-      currentUser?.role !== "district_officer"
-    )
+    if (!isAdminLike && currentUser?.role !== "district_officer")
       return;
     setDistrictOfficersLoading(true);
     try {
@@ -84,7 +83,7 @@ export function useAssignment({
     } finally {
       setDistrictOfficersLoading(false);
     }
-  }, [token, currentUser?.role, complaintLocationId]);
+  }, [token, complaintLocationId, isAdminLike]);
 
   const handleOpenAssignmentModal = useCallback(() => {
     setAssignmentModal(true);
@@ -133,7 +132,7 @@ export function useAssignment({
       setAssignmentModal(false);
       setAssignee("");
       setExpectedResolutionDate("");
-      if (currentUser?.role === "admin") {
+      if (isAdminLike) {
         onStatsRefresh?.();
       }
     } catch (error) {
@@ -168,7 +167,7 @@ export function useAssignment({
     districtOfficers,
     complaintLocationId,
     complaintLocationLabel,
-    currentUser?.role,
+    isAdminLike,
     onComplaintUpdate,
     onSuccess,
     onStatsRefresh,

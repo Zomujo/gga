@@ -9,6 +9,7 @@ interface DashboardNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isNavigator: boolean;
   isDistrictOfficer: boolean;
   onNewCase: () => void;
@@ -24,6 +25,7 @@ export function DashboardNav({
   activeTab,
   setActiveTab,
   isAdmin,
+  isSuperAdmin,
   isNavigator,
   isDistrictOfficer,
   onNewCase,
@@ -34,7 +36,11 @@ export function DashboardNav({
   isLoading,
 }: DashboardNavProps) {
   const visibleTabs = isAdmin
-    ? tabs.filter((t) => t.id !== "staff_dashboard")
+    ? tabs.filter((t) =>
+        isSuperAdmin
+          ? t.id !== "staff_dashboard"
+          : t.id !== "staff_dashboard" && t.id !== "departments"
+      )
     : isDistrictOfficer
     ? tabs.filter((t) => t.id === "staff_dashboard" || t.id === "cases")
     : tabs.filter((t) => t.id === "cases");

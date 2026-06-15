@@ -18,6 +18,8 @@ interface UseMonitoringOptions {
 }
 
 export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
+  const isAdminLike =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const [monitoringStats, setMonitoringStats] = useState<ComplaintStatsWithTrends | null>(null);
   const [overdueComplaints, setOverdueComplaints] = useState<ApiComplaint[]>(
     []
@@ -110,14 +112,14 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
   }, [token]);
 
   const fetchNavigators = useCallback(async () => {
-    if (!token || currentUser?.role !== "admin") return;
+    if (!token || !isAdminLike) return;
     try {
       const response = await getNavigators(token);
       setNavigators(response.rows || []);
     } catch (error) {
       console.error("Failed to load navigators:", error);
     }
-  }, [token, currentUser?.role]);
+  }, [token, isAdminLike]);
 
   return {
     // State

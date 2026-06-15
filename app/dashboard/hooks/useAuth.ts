@@ -77,7 +77,8 @@ export function useAuth() {
     router.replace("/");
   }, [router]);
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const isNavigator = currentUser?.role === "navigator";
   const isDistrictOfficer = currentUser?.role === "district_officer";
 
