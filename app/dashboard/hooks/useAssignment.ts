@@ -3,8 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   assignComplaint as assignComplaintApi,
+  getDepartments,
   getDistrictOfficers,
   type ApiComplaint,
+  type ApiDepartment,
   type ApiUser,
 } from "@/lib/api";
 
@@ -29,20 +31,23 @@ export function useAssignment({
   const [assignee, setAssignee] = useState("");
   const [expectedResolutionDate, setExpectedResolutionDate] = useState("");
   const [districtOfficers, setDistrictOfficers] = useState<ApiUser[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
   const [districtOfficersLoading, setDistrictOfficersLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
 
   const complaintDistrict = activeComplaint?.district;
+  const complaintLocationId = activeComplaint?.locationId;
+  const complaintLocationName = activeComplaint?.locationName;
 
   const eligibleDistrictOfficers = useMemo(() => {
-    if (!complaintDistrict) return districtOfficers;
-    return districtOfficers.filter((o) => o.district === complaintDistrict);
-  }, [districtOfficers, complaintDistrict]);
+    if (!complaintLocationId) return districtOfficers;
+    return districtOfficers.filter((o) => o.locationId === complaintLocationId);
+  }, [districtOfficers, complaintLocationId]);
 
-  const complaintDistrictLabel = useMemo(() => {
-    return complaintDistrict ?? "";
-  }, [complaintDistrict]);
+  const complaintLocationLabel = useMemo(() => {
+    return complaintLocationName ?? complaintDistrict ?? "";
+  }, [complaintLocationName, complaintDistrict]);
 
   const clearAssignmentError = useCallback(() => {
     setAssignmentError(null);
@@ -57,17 +62,29 @@ export function useAssignment({
       return;
     setDistrictOfficersLoading(true);
     try {
-      const response = await getDistrictOfficers(
-        token,
-        complaintDistrict ?? undefined
+      const [officersResponse, departmentsResponse] = await Promise.all([
+        getDistrictOfficers(token, complaintLocationId ?? undefined),
+        getDepartments(token),
+      ]);
+      const availableDepartments = departmentsResponse.rows || [];
+      setDepartments(availableDepartments);
+      const departmentNames = new Map(
+        availableDepartments.map((department) => [department.id, department.name])
       );
-      setDistrictOfficers(response.rows || []);
+      setDistrictOfficers(
+        (officersResponse.rows || []).map((officer) => ({
+          ...officer,
+          departmentName: officer.departmentId
+            ? departmentNames.get(officer.departmentId) ?? null
+            : null,
+        }))
+      );
     } catch (error) {
       console.error("Failed to load district officers:", error);
     } finally {
       setDistrictOfficersLoading(false);
     }
-  }, [token, currentUser?.role, complaintDistrict]);
+  }, [token, currentUser?.role, complaintLocationId]);
 
   const handleOpenAssignmentModal = useCallback(() => {
     setAssignmentModal(true);
@@ -91,9 +108,9 @@ export function useAssignment({
     }
 
     const officer = districtOfficers.find((o) => o.id === assignee);
-    if (complaintDistrict && officer?.district !== complaintDistrict) {
+    if (complaintLocationId && officer?.locationId !== complaintLocationId) {
       setAssignmentError(
-        `Please select a district officer in ${complaintDistrictLabel}.`
+        `Please select a staff officer in ${complaintLocationLabel}.`
       );
       return;
     }
@@ -149,8 +166,8 @@ export function useAssignment({
     assignee,
     expectedResolutionDate,
     districtOfficers,
-    complaintDistrict,
-    complaintDistrictLabel,
+    complaintLocationId,
+    complaintLocationLabel,
     currentUser?.role,
     onComplaintUpdate,
     onSuccess,
@@ -170,6 +187,7 @@ export function useAssignment({
     assignee,
     expectedResolutionDate,
     districtOfficers,
+    departments,
     eligibleDistrictOfficers,
     districtOfficersLoading,
     assigning,

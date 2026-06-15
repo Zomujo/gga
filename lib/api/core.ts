@@ -108,6 +108,15 @@ export interface RawUser {
   role: BackendRole | string;
   locationId?: string | null;
   phoneNumber?: string | null;
+  departmentId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RawDepartment {
+  id: string;
+  name: string;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -146,8 +155,18 @@ export interface ApiUser {
   district?: string | null;
   locationId?: string | null;
   phoneNumber?: string | null;
+  departmentId?: string | null;
+  departmentName?: string | null;
   locationName?: string | null;
   metroDistrictName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiDepartment {
+  id: string;
+  name: string;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -171,6 +190,8 @@ export interface ApiComplaint {
   requestType?: string;
   otherRequest?: string | null;
   district: string;
+  locationName?: string | null;
+  metroDistrictName?: string | null;
   description?: string;
   status: FrontendStatus;
   assignedToId?: string | null;
@@ -336,7 +357,7 @@ function getLocationHierarchy(locationId?: string): {
   }
 
   return {
-    locationName: location.name,
+    locationName: location.type === "METRO_DISTRICT" ? null : location.name,
     metroDistrictName: location.type === "METRO_DISTRICT" ? location.name : null,
   };
 }
@@ -464,6 +485,8 @@ export function mapUser(raw: RawUser): ApiUser {
     district: raw.locationId ? getDistrictFromLocation(raw.locationId) : null,
     locationId: raw.locationId ?? null,
     phoneNumber: raw.phoneNumber ? toGhanaPhoneDisplay(raw.phoneNumber) : null,
+    departmentId: raw.departmentId ?? null,
+    departmentName: null,
     locationName: hierarchy.locationName,
     metroDistrictName: hierarchy.metroDistrictName,
     createdAt: raw.createdAt,
@@ -472,6 +495,7 @@ export function mapUser(raw: RawUser): ApiUser {
 }
 
 export function mapCase(raw: RawCase): ApiComplaint {
+  const hierarchy = getLocationHierarchy(raw.locationId);
   return {
     id: raw.id,
     code: raw.code,
@@ -481,6 +505,8 @@ export function mapCase(raw: RawCase): ApiComplaint {
     category: fromBackendCategory(raw.category),
     otherCategory: raw.otherCategory ?? null,
     district: getDistrictFromLocation(raw.locationId),
+    locationName: hierarchy.locationName,
+    metroDistrictName: hierarchy.metroDistrictName,
     description: raw.description,
     status: fromBackendStatus(raw.status),
     assignedToId: raw.assignedToId ?? null,
@@ -505,6 +531,16 @@ export function mapLocation(raw: RawLocation): ApiLocation {
     region: raw.region,
     type: raw.type,
     parentLocationId: raw.parentLocationId ?? null,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+export function mapDepartment(raw: RawDepartment): ApiDepartment {
+  return {
+    id: raw.id,
+    name: raw.name,
+    isActive: raw.isActive,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

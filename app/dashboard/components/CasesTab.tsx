@@ -150,7 +150,7 @@ export function CasesTab({
           complaints={filteredComplaints}
           selectedCase={selectedCase}
           onSelect={onSelect}
-          showDistrictColumn={isAdmin}
+          locationColumnLabel={isAdmin ? "Town" : null}
           page={complaintsPage}
           pageSize={complaintsPageSize}
           total={displayedTotal}

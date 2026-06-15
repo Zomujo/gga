@@ -13,7 +13,7 @@ interface CasesTableProps {
   complaints: ApiComplaint[];
   selectedCase: string | null;
   onSelect: (id: string) => void;
-  showDistrictColumn?: boolean;
+  locationColumnLabel?: string | null;
   // Server-side pagination props
   page: number;
   pageSize: number;
@@ -27,7 +27,7 @@ export function CasesTable({
   complaints,
   selectedCase,
   onSelect,
-  showDistrictColumn = true,
+  locationColumnLabel = null,
   page,
   pageSize,
   total,
@@ -36,6 +36,7 @@ export function CasesTable({
   loading = false,
 }: CasesTableProps) {
   const totalPages = Math.ceil(total / pageSize);
+  const showLocationColumn = Boolean(locationColumnLabel);
 
   const handlePageSizeChange = (newSize: number) => {
     onPageSizeChange(newSize);
@@ -63,9 +64,9 @@ export function CasesTable({
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Case Code
               </th>
-              {showDistrictColumn && (
+              {showLocationColumn && (
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  District
+                  {locationColumnLabel}
                 </th>
               )}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -86,7 +87,7 @@ export function CasesTable({
             {complaints.length === 0 ? (
               <tr>
                 <td
-                  colSpan={showDistrictColumn ? 6 : 5}
+                  colSpan={showLocationColumn ? 6 : 5}
                   className="px-6 py-8 text-center text-sm text-gray-500"
                 >
                   No cases found.
@@ -104,9 +105,11 @@ export function CasesTable({
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
                     {c.code || c.id.slice(0, 8)}
                   </td>
-                  {showDistrictColumn && (
+                  {showLocationColumn && (
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {formatDisplayText(c.district)}
+                      {locationColumnLabel === "Town"
+                        ? c.locationName || "—"
+                        : formatDisplayText(c.district)}
                     </td>
                   )}
                   <td className="px-6 py-4 text-sm text-gray-700">

@@ -4,6 +4,7 @@ import {
   fromBackendStatus,
   isValidGhanaPhoneInput,
   mapCase,
+  mapDepartment,
   mapLocation,
   mapUser,
   request,
@@ -15,12 +16,14 @@ import {
   toDisplayLabel,
   toDisplayStatus,
   type ApiComplaint,
+  type ApiDepartment,
   type ApiLocation,
   type ApiUser,
   type FrontendRole,
   type FrontendStatus,
   type RawApiSuccess,
   type RawCase,
+  type RawDepartment,
   type RawLocation,
   type RawPaginated,
   type RawUser,
@@ -223,6 +226,19 @@ export async function getAdmins(token: string): Promise<{ rows: ApiUser[] }> {
     query: { role: "ADMIN", page: 1, pageSize: 100 },
   });
   return { rows: (payload.rows ?? []).map(mapUser) };
+}
+
+export async function getDepartments(
+  token: string
+): Promise<{ rows: ApiDepartment[] }> {
+  const payload = await request<
+    RawPaginated<RawDepartment> | RawApiSuccess<RawPaginated<RawDepartment>>
+  >("/departments", {
+    token,
+    query: { page: 1, pageSize: 100 },
+  });
+  const page = unwrapPaginated<RawDepartment>(payload);
+  return { rows: page.rows.map(mapDepartment) };
 }
 
 export async function assignComplaint(

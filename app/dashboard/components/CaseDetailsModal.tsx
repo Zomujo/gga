@@ -248,12 +248,24 @@ export function CaseDetailsModal({
 
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">
-              District
+              Town
             </p>
             <p className="text-gray-700">
-              {formatDisplayText(activeComplaint.district)}
+              {activeComplaint.locationName ||
+                formatDisplayText(activeComplaint.district)}
             </p>
           </div>
+
+          {activeComplaint.metroDistrictName && (
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500">
+                District
+              </p>
+              <p className="text-gray-700">
+                {activeComplaint.metroDistrictName}
+              </p>
+            </div>
+          )}
 
           <div>
             <p className="text-xs uppercase tracking-wide text-gray-500">
@@ -647,6 +659,9 @@ export function CaseDetailsModal({
                             {officer.fullName}
                           </span>
                           <span className="block text-xs text-gray-500">
+                            {officer.departmentName || "No department set"}
+                          </span>
+                          <span className="block text-xs text-gray-500">
                             {formatDisplayText(officer.district)} ({officer.email})
                           </span>
                         </button>
@@ -656,6 +671,9 @@ export function CaseDetailsModal({
                   {selectedOfficer && (
                     <p className="mt-2 text-xs text-gray-500">
                       Selected: {selectedOfficer.fullName}
+                      {selectedOfficer.departmentName
+                        ? ` • ${selectedOfficer.departmentName}`
+                        : ""}
                     </p>
                   )}
                 </div>
