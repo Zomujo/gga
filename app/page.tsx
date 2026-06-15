@@ -12,7 +12,7 @@ import {
 import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
 
 const highlights = [
-  "USSD-native reporting for any phone without data",
+  "Community-led reporting with clear case ownership",
   "Assembly portal for structured case management",
   "Real-time tracking and accountability measures",
 ];

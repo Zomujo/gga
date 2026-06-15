@@ -12,7 +12,6 @@ import { CasesTab } from "./components/CasesTab";
 import { LocationsTab } from "./components/LocationsTab";
 import { MonitoringTab } from "./components/MonitoringTab";
 import { StaffDashboardTab } from "./components/StaffDashboardTab";
-import { UssdTab } from "./components/UssdTab";
 import { CaseDetailsModal } from "./components/CaseDetailsModal";
 import { NewCaseModal } from "./components/NewCaseModal";
 import { createLocation, getLocations, type ApiLocation } from "@/lib/api";
@@ -48,13 +47,11 @@ export default function DashboardClient() {
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
       if (path.endsWith("/dashboard")) return "staff_dashboard";
-      if (path.endsWith("/ussd")) return "ussd";
       return "cases";
     }
     if (path === "/admin/dashboard") return "monitoring";
     if (path === "/admin/cases") return "cases";
     if (path === "/admin/locations") return "locations";
-    if (path === "/admin/ussd") return "ussd";
     return "monitoring";
   }, []);
 
@@ -296,17 +293,14 @@ export default function DashboardClient() {
             monitoring: "/admin/dashboard",
             cases: "/admin/cases",
             locations: "/admin/locations",
-            ussd: "/admin/ussd",
           }
         : currentUser?.role === "district_officer"
         ? {
             staff_dashboard: "/staff-officer/dashboard",
             cases: "/staff-officer/cases",
-            ussd: "/staff-officer/ussd",
           }
         : {
             cases: "/field-agent/cases",
-            ussd: "/field-agent/ussd",
           };
       const nextRoute = routeMap[tab];
       if (nextRoute && pathname !== nextRoute) {
@@ -476,10 +470,6 @@ export default function DashboardClient() {
 
       case "staff_dashboard":
         return <StaffDashboardTab complaints={liveComplaints} currentUser={currentUser!} />;
-
-      case "ussd":
-        return <UssdTab />;
-
       default:
         return null;
     }

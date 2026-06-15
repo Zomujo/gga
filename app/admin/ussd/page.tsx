@@ -1,7 +1,5 @@
-"use client";
-
-import DashboardClient from "@/app/dashboard/DashboardClient";
+import { redirect } from "next/navigation";
 
 export default function AdminUssdPage() {
-  return <DashboardClient />;
+  redirect("/admin/dashboard");
 }

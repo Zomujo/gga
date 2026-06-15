@@ -36,8 +36,8 @@ export function DashboardNav({
   const visibleTabs = isAdmin
     ? tabs.filter((t) => t.id !== "staff_dashboard")
     : isDistrictOfficer
-    ? tabs.filter((t) => t.id === "staff_dashboard" || t.id === "cases" || t.id === "ussd")
-    : tabs.filter((t) => t.id === "cases" || t.id === "ussd");
+    ? tabs.filter((t) => t.id === "staff_dashboard" || t.id === "cases")
+    : tabs.filter((t) => t.id === "cases");
 
   return (
     <nav className="border-b border-gray-200 bg-white shadow-sm">
@@ -65,7 +65,7 @@ export function DashboardNav({
                   onClick={onNewCase}
                   className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 sm:px-4"
                 >
-                  + New Case
+                  + New Report
                 </button>
               </div>
             )}
@@ -85,7 +85,7 @@ export function DashboardNav({
             onClick={onNewCase}
             className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 sm:hidden"
           >
-            + New Case
+            + New Report
           </button>
         )}
 
