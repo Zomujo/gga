@@ -14,3 +14,4 @@ export * from "./MonitoringTab";
 export * from "./StaffDashboardTab";
 export * from "./AnalyticsCharts";
 export * from "./UssdTab";
+export * from "./DepartmentsTab";

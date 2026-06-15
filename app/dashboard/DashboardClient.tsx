@@ -9,12 +9,21 @@ import { useEscalation } from "./hooks/useEscalation";
 import { useMonitoring } from "./hooks/useMonitoring";
 import { DashboardNav } from "./components/DashboardNav";
 import { CasesTab } from "./components/CasesTab";
+import { DepartmentsTab } from "./components/DepartmentsTab";
 import { LocationsTab } from "./components/LocationsTab";
 import { MonitoringTab } from "./components/MonitoringTab";
 import { StaffDashboardTab } from "./components/StaffDashboardTab";
 import { CaseDetailsModal } from "./components/CaseDetailsModal";
 import { NewCaseModal } from "./components/NewCaseModal";
-import { createLocation, getLocations, type ApiLocation } from "@/lib/api";
+import {
+  createDepartment,
+  createLocation,
+  getDepartments,
+  getLocations,
+  updateDepartment,
+  type ApiDepartment,
+  type ApiLocation,
+} from "@/lib/api";
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -53,6 +62,17 @@ export default function DashboardClient() {
     "METRO_DISTRICT" | "TOWN"
   >("METRO_DISTRICT");
   const [newLocationParentId, setNewLocationParentId] = useState("");
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [departmentError, setDepartmentError] = useState<string | null>(null);
+  const [creatingDepartment, setCreatingDepartment] = useState(false);
+  const [updatingDepartmentId, setUpdatingDepartmentId] = useState<
+    string | null
+  >(null);
+  const [newDepartmentName, setNewDepartmentName] = useState("");
+  const [newDepartmentScope, setNewDepartmentScope] = useState<
+    "DISTRICT" | "MUNICIPAL" | ""
+  >("");
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
@@ -62,6 +82,7 @@ export default function DashboardClient() {
     if (path.endsWith("/dashboard")) return "monitoring";
     if (path.endsWith("/cases")) return "cases";
     if (path.endsWith("/locations")) return "locations";
+    if (path.endsWith("/departments")) return "departments";
     return "monitoring";
   }, []);
 
@@ -89,6 +110,22 @@ export default function DashboardClient() {
       setLocationsLoading(false);
     }
   }, [hasInitializedLocationFilter]);
+
+  const loadDepartments = useCallback(async () => {
+    if (!token || !isSuperAdmin) return;
+    setDepartmentsLoading(true);
+    try {
+      const response = await getDepartments(token);
+      setDepartments(response.rows ?? []);
+      setDepartmentError(null);
+    } catch (error) {
+      setDepartmentError(
+        error instanceof Error ? error.message : "Failed to load departments"
+      );
+    } finally {
+      setDepartmentsLoading(false);
+    }
+  }, [token, isSuperAdmin]);
 
   const {
     monitoringMetrics,
@@ -193,6 +230,57 @@ export default function DashboardClient() {
     complaintsPageSize,
   ]);
 
+  const handleCreateDepartment = useCallback(async () => {
+    if (!token || !newDepartmentName.trim()) return;
+    setCreatingDepartment(true);
+    try {
+      const created = await createDepartment(token, {
+        name: newDepartmentName.trim(),
+        scope: newDepartmentScope || undefined,
+      });
+      setDepartments((prev) => [created, ...prev]);
+      setNewDepartmentName("");
+      setNewDepartmentScope("");
+      setDepartmentError(null);
+    } catch (error) {
+      setDepartmentError(
+        error instanceof Error ? error.message : "Failed to create department"
+      );
+    } finally {
+      setCreatingDepartment(false);
+    }
+  }, [token, newDepartmentName, newDepartmentScope]);
+
+  const handleUpdateDepartment = useCallback(
+    async (
+      departmentId: string,
+      updates: {
+        name?: string;
+        scope?: "DISTRICT" | "MUNICIPAL";
+        isActive?: boolean;
+      }
+    ) => {
+      if (!token) return;
+      setUpdatingDepartmentId(departmentId);
+      try {
+        const updated = await updateDepartment(token, departmentId, updates);
+        setDepartments((prev) =>
+          prev.map((department) =>
+            department.id === departmentId ? updated : department
+          )
+        );
+        setDepartmentError(null);
+      } catch (error) {
+        setDepartmentError(
+          error instanceof Error ? error.message : "Failed to update department"
+        );
+      } finally {
+        setUpdatingDepartmentId(null);
+      }
+    },
+    [token]
+  );
+
   const handleAssignSuccess = useCallback(
     (detail: string) => {
       setLastAction({ type: "assign", detail });
@@ -273,6 +361,9 @@ export default function DashboardClient() {
       fetchDistrictOfficers();
       fetchAdmins();
     }
+    if (isSuperAdmin) {
+      loadDepartments();
+    }
   }, [
     token,
     loadLocations,
@@ -286,6 +377,8 @@ export default function DashboardClient() {
     refreshStatsForAdmin,
     adminDistrict,
     isAdmin,
+    isSuperAdmin,
+    loadDepartments,
   ]);
 
   useEffect(() => {
@@ -321,6 +414,7 @@ export default function DashboardClient() {
             monitoring: `${adminBasePath}/dashboard`,
             cases: `${adminBasePath}/cases`,
             locations: `${adminBasePath}/locations`,
+            departments: `${adminBasePath}/departments`,
           }
         : currentUser?.role === "district_officer"
         ? {
@@ -484,6 +578,22 @@ export default function DashboardClient() {
           />
         ) : null;
 
+      case "departments":
+        return isSuperAdmin ? (
+          <DepartmentsTab
+            departments={departments}
+            departmentsLoading={departmentsLoading}
+            creatingDepartment={creatingDepartment}
+            updatingDepartmentId={updatingDepartmentId}
+            newDepartmentName={newDepartmentName}
+            newDepartmentScope={newDepartmentScope}
+            onNewDepartmentNameChange={setNewDepartmentName}
+            onNewDepartmentScopeChange={setNewDepartmentScope}
+            onCreateDepartment={handleCreateDepartment}
+            onUpdateDepartment={handleUpdateDepartment}
+          />
+        ) : null;
+
       case "monitoring":
         return (
           <MonitoringTab
@@ -529,6 +639,7 @@ export default function DashboardClient() {
         activeTab={activeTab}
         setActiveTab={handleTabChange}
         isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
         isNavigator={isNavigator}
         isDistrictOfficer={isDistrictOfficer}
         onNewCase={() => setNewCaseModal(true)}
@@ -544,6 +655,11 @@ export default function DashboardClient() {
       {locationError && (
         <div className="mx-auto mb-4 max-w-7xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {locationError}
+        </div>
+      )}
+      {departmentError && (
+        <div className="mx-auto mb-4 max-w-7xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {departmentError}
         </div>
       )}
 
