@@ -7,6 +7,7 @@ import { categoryOptions } from "../utils/constants";
 interface LocationOption {
   value: string;
   label: string;
+  parentLocationId?: string | null;
 }
 
 interface NewCaseModalProps {
@@ -16,6 +17,7 @@ interface NewCaseModalProps {
   complaintStatus: string | null;
   complaintsError: string | null;
   locationOptions: LocationOption[];
+  isLocationLocked?: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
 }
@@ -27,6 +29,7 @@ export function NewCaseModal({
   complaintStatus,
   complaintsError,
   locationOptions,
+  isLocationLocked = false,
   onSubmit,
   onClose,
 }: NewCaseModalProps) {
@@ -37,6 +40,13 @@ export function NewCaseModal({
   const selectedLocationLabel =
     locationOptions.find((opt) => opt.value === complaintForm.district)?.label ??
     "Choose location";
+  const selectedLocation = locationOptions.find(
+    (opt) => opt.value === complaintForm.district
+  );
+  const selectedMetroDistrictLabel =
+    locationOptions.find(
+      (opt) => opt.value === selectedLocation?.parentLocationId
+    )?.label ?? "";
   const selectedCategoryLabel =
     categoryOptions.find((opt) => opt.value === complaintForm.category)?.label ??
     "Choose category";
@@ -91,17 +101,20 @@ export function NewCaseModal({
                 </span>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none sm:hidden"
-                  onClick={() => setPickerOpen("location")}
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 sm:hidden"
+                  onClick={() => {
+                    if (!isLocationLocked) setPickerOpen("location");
+                  }}
+                  disabled={isLocationLocked}
                 >
                   <span className="truncate">
                     {complaintForm.district ? selectedLocationLabel : "Choose location"}
                   </span>
-                  <span className="text-gray-400">▾</span>
+                  <span className="text-gray-400">{isLocationLocked ? "" : "▾"}</span>
                 </button>
                 <select
                   required
-                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none sm:block"
+                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500 sm:block"
                   value={complaintForm.district}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -109,6 +122,7 @@ export function NewCaseModal({
                       district: e.target.value,
                     }))
                   }
+                  disabled={isLocationLocked}
                 >
                   <option value="">Choose location</option>
                   {locationOptions.map((opt) => (
@@ -117,6 +131,14 @@ export function NewCaseModal({
                     </option>
                   ))}
                 </select>
+                {isLocationLocked && (
+                  <div className="space-y-1 text-xs text-gray-500">
+                    <p>Your assigned town is used automatically for reports.</p>
+                    {selectedMetroDistrictLabel && (
+                      <p>District: {selectedMetroDistrictLabel}</p>
+                    )}
+                  </div>
+                )}
               </label>
 
               <label className="block space-y-1">

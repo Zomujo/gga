@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ApiUser } from "@/lib/api";
-import { AUTH_EXPIRED_EVENT, clearAuth, loadAuth } from "@/lib/storage";
+import { getProfile, type ApiUser } from "@/lib/api";
+import {
+  AUTH_EXPIRED_EVENT,
+  clearAuth,
+  loadAuth,
+  saveAuth,
+} from "@/lib/storage";
 
 export function useAuth() {
   const router = useRouter();
@@ -27,6 +32,29 @@ export function useAuth() {
     const frame = window.requestAnimationFrame(syncAuthState);
     return () => window.cancelAnimationFrame(frame);
   }, [router]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+
+    const refreshProfile = async () => {
+      try {
+        const profile = await getProfile(token);
+        if (cancelled) return;
+        setCurrentUser(profile);
+        saveAuth(token, profile);
+      } catch {
+        // Leave current auth state alone; global auth-expired handling covers invalid tokens.
+      }
+    };
+
+    refreshProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   useEffect(() => {
     const handleAuthExpired = () => {

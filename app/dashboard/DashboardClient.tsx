@@ -36,7 +36,7 @@ export default function DashboardClient() {
   const [hasInitializedLocationFilter, setHasInitializedLocationFilter] =
     useState(false);
   const [locationOptions, setLocationOptions] = useState<
-    { value: string; label: string }[]
+    { value: string; label: string; parentLocationId?: string | null }[]
   >([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -62,6 +62,7 @@ export default function DashboardClient() {
       const options = (response.rows ?? []).map((location: ApiLocation) => ({
         value: location.id,
         label: location.name,
+        parentLocationId: location.parentLocationId ?? null,
       }));
       setLocationOptions(options);
       setLocationError(null);
@@ -526,6 +527,7 @@ export default function DashboardClient() {
           complaintStatus={complaintStatus}
           complaintsError={complaintsError}
           locationOptions={locationOptions}
+          isLocationLocked={currentUser.role === "navigator"}
           onSubmit={handleComplaintSubmitWithClose}
           onClose={handleCloseNewCaseModal}
         />

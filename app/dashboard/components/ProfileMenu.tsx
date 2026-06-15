@@ -62,6 +62,14 @@ export function ProfileMenu({
           <p className="text-xs text-gray-500">
             Role: {roleLabel}
           </p>
+          {(currentUser.locationName || currentUser.metroDistrictName) && (
+            <p className="text-xs text-gray-500">
+              Location:{" "}
+              {[currentUser.locationName, currentUser.metroDistrictName]
+                .filter(Boolean)
+                .join(", ")}
+            </p>
+          )}
           <button
             className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             onClick={() => {

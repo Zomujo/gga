@@ -7,6 +7,7 @@ import {
   registerUser as registerUserApi,
   getLocations,
   getPublicStats,
+  isValidGhanaPhoneInput,
   type ApiLocation,
 } from "@/lib/api";
 import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
@@ -217,6 +218,14 @@ export default function LandingPage() {
     try {
       if (authMode === "register" && !form.district) {
         throw new Error("A location must be selected for field agents.");
+      }
+      if (
+        authMode === "register" &&
+        !isValidGhanaPhoneInput(form.phoneNumber)
+      ) {
+        throw new Error(
+          "Enter a valid Ghana phone number, for example 0201234567."
+        );
       }
 
       const payload =

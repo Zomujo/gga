@@ -145,6 +145,8 @@ export interface ApiUser {
   district?: string | null;
   locationId?: string | null;
   phoneNumber?: string | null;
+  locationName?: string | null;
+  metroDistrictName?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -199,6 +201,46 @@ const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DISTRICT_FALLBACKS = ["assembly_a", "assembly_b", "assembly_c"];
+
+export function toGhanaPhoneE164(input?: string | null): string {
+  const value = input?.trim() ?? "";
+  if (!value) return "";
+
+  const compact = value.replace(/[\s()-]/g, "");
+
+  if (compact.startsWith("+233") && compact.length === 13) return compact;
+  if (compact.startsWith("233") && compact.length === 12) return `+${compact}`;
+  if (compact.startsWith("0") && compact.length === 10) {
+    return `+233${compact.slice(1)}`;
+  }
+
+  return compact;
+}
+
+export function toGhanaPhoneDisplay(input?: string | null): string {
+  const value = input?.trim() ?? "";
+  if (!value) return "";
+
+  const compact = value.replace(/[\s()-]/g, "");
+
+  if (compact.startsWith("+233") && compact.length === 13) {
+    return `0${compact.slice(4)}`;
+  }
+
+  if (compact.startsWith("233") && compact.length === 12) {
+    return `0${compact.slice(3)}`;
+  }
+
+  return compact;
+}
+
+export function isValidGhanaPhoneInput(input?: string | null): boolean {
+  const value = input?.trim() ?? "";
+  if (!value) return false;
+
+  const compact = value.replace(/[\s()-]/g, "");
+  return /^(\+233\d{9}|233\d{9}|0\d{9})$/.test(compact);
+}
 
 export function toBackendRole(role: FrontendRole): BackendRole {
   if (role === "admin") return "ADMIN";
@@ -259,11 +301,42 @@ function getDistrictFromLocation(locationId?: string): string {
   if (!locationId) return "assembly_a";
   const location = locationCache.byId.get(locationId);
   if (!location) return "assembly_a";
+  if (location.type === "TOWN" && location.parentLocationId) {
+    const parent = locationCache.byId.get(location.parentLocationId);
+    if (parent?.name) return normalizeLabel(parent.name);
+  }
   const byName = normalizeLabel(location.name);
   if (byName.includes("assembly_a")) return "assembly_a";
   if (byName.includes("assembly_b")) return "assembly_b";
   if (byName.includes("assembly_c")) return "assembly_c";
   return byName;
+}
+
+function getLocationHierarchy(locationId?: string): {
+  locationName: string | null;
+  metroDistrictName: string | null;
+} {
+  if (!locationId) {
+    return { locationName: null, metroDistrictName: null };
+  }
+
+  const location = locationCache.byId.get(locationId);
+  if (!location) {
+    return { locationName: null, metroDistrictName: null };
+  }
+
+  if (location.type === "TOWN" && location.parentLocationId) {
+    const parent = locationCache.byId.get(location.parentLocationId);
+    return {
+      locationName: location.name,
+      metroDistrictName: parent?.name ?? null,
+    };
+  }
+
+  return {
+    locationName: location.name,
+    metroDistrictName: location.type === "METRO_DISTRICT" ? location.name : null,
+  };
 }
 
 export async function request<T>(
@@ -380,6 +453,7 @@ export function unwrapArray<T>(payload: unknown): T[] {
 }
 
 export function mapUser(raw: RawUser): ApiUser {
+  const hierarchy = getLocationHierarchy(raw.locationId ?? undefined);
   return {
     id: raw.id,
     email: raw.email,
@@ -387,7 +461,9 @@ export function mapUser(raw: RawUser): ApiUser {
     role: fromBackendRole(raw.role),
     district: raw.locationId ? getDistrictFromLocation(raw.locationId) : null,
     locationId: raw.locationId ?? null,
-    phoneNumber: raw.phoneNumber ?? null,
+    phoneNumber: raw.phoneNumber ? toGhanaPhoneDisplay(raw.phoneNumber) : null,
+    locationName: hierarchy.locationName,
+    metroDistrictName: hierarchy.metroDistrictName,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };
@@ -398,7 +474,7 @@ export function mapCase(raw: RawCase): ApiComplaint {
     id: raw.id,
     code: raw.code,
     fullName: raw.fullName,
-    phoneNumber: raw.phoneNumber ?? "",
+    phoneNumber: toGhanaPhoneDisplay(raw.phoneNumber),
     category: fromBackendCategory(raw.category),
     otherCategory: raw.otherCategory ?? null,
     district: getDistrictFromLocation(raw.locationId),

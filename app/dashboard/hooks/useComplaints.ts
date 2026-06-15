@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   getComplaints,
   getComplaint,
@@ -56,6 +56,16 @@ const initialFormState: ComplaintFormState = {
   complaintType: "general",
 };
 
+function getInitialFormState(currentUser: ApiUser | null): ComplaintFormState {
+  return {
+    ...initialFormState,
+    phoneNumber:
+      currentUser?.role === "navigator" ? currentUser.phoneNumber ?? "" : "",
+    district:
+      currentUser?.role === "navigator" ? currentUser.locationId ?? "" : "",
+  };
+}
+
 interface UseComplaintsOptions {
   token: string | null;
   currentUser: ApiUser | null;
@@ -77,7 +87,7 @@ export function useComplaints({
   const [complaintsPageSize, setComplaintsPageSize] = useState(10);
   const [complaintsTotal, setComplaintsTotal] = useState(0);
   const [complaintForm, setComplaintForm] =
-    useState<ComplaintFormState>(initialFormState);
+    useState<ComplaintFormState>(() => getInitialFormState(currentUser));
   const [complaintSubmitting, setComplaintSubmitting] = useState(false);
   const [complaintStatus, setComplaintStatus] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("All statuses");
@@ -97,6 +107,16 @@ export function useComplaints({
   const [assignedLoadingIds, setAssignedLoadingIds] = useState<
     Record<string, boolean>
   >({});
+
+  useEffect(() => {
+    if (currentUser?.role !== "navigator") return;
+
+    setComplaintForm((prev) => ({
+      ...prev,
+      phoneNumber: currentUser.phoneNumber ?? prev.phoneNumber,
+      district: currentUser.locationId ?? prev.district,
+    }));
+  }, [currentUser]);
 
   const refreshComplaints = useCallback(
     async (
@@ -169,7 +189,7 @@ export function useComplaints({
 
         await refreshComplaints();
 
-        setComplaintForm(initialFormState);
+        setComplaintForm(getInitialFormState(currentUser));
         setComplaintStatus(
           `Complaint submitted successfully. Code: ${result.code}`
         );
@@ -185,8 +205,14 @@ export function useComplaints({
         setComplaintSubmitting(false);
       }
     },
-    [token, complaintForm, refreshComplaints, currentUser?.role]
+    [token, complaintForm, refreshComplaints, currentUser]
   );
+
+  const resetComplaintForm = useCallback(() => {
+    setComplaintForm(getInitialFormState(currentUser));
+    setComplaintStatus(null);
+    setComplaintsError(null);
+  }, [currentUser]);
 
   const handleUpdateStatus = useCallback(
     async (complaintId: string, newStatus: ApiComplaint["status"]) => {
@@ -407,12 +433,6 @@ export function useComplaints({
     setLiveComplaints((prev) =>
       prev.map((c) => (c.id === complaint.id ? complaint : c))
     );
-  }, []);
-
-  const resetComplaintForm = useCallback(() => {
-    setComplaintForm(initialFormState);
-    setComplaintStatus(null);
-    setComplaintsError(null);
   }, []);
 
   return {

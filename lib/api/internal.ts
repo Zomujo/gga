@@ -2,11 +2,13 @@ import {
   ApiError,
   ensureLocationCache,
   fromBackendStatus,
+  isValidGhanaPhoneInput,
   mapCase,
   mapLocation,
   mapUser,
   request,
   resolveLocationId,
+  toGhanaPhoneE164,
   toBackendCategory,
   toBackendRole,
   toBackendStatus,
@@ -60,7 +62,7 @@ export async function registerUser(input: {
       email: input.email,
       password: input.password,
       fullName: input.fullName,
-      phoneNumber: input.phoneNumber,
+      phoneNumber: toGhanaPhoneE164(input.phoneNumber),
       departmentId: input.departmentId,
       role: toBackendRole(input.role ?? "navigator"),
       locationId,
@@ -140,7 +142,7 @@ export async function submitComplaint(
     method: "POST",
     token: undefined,
     body: {
-      phoneNumber: input.phoneNumber,
+      phoneNumber: toGhanaPhoneE164(input.phoneNumber),
       locationId,
       category: toBackendCategory(input.category),
       otherCategory: input.otherCategory,
@@ -181,7 +183,7 @@ export async function submitComplaintByNavigator(
     token,
     body: {
       fullName: input.fullName,
-      phoneNumber: input.phoneNumber,
+      phoneNumber: toGhanaPhoneE164(input.phoneNumber),
       locationId,
       category: toBackendCategory(input.category),
       otherCategory: input.otherCategory,
@@ -197,7 +199,7 @@ export async function getNavigators(token: string): Promise<{ rows: ApiUser[] }>
   await ensureLocationCache(token);
   const payload = await request<RawPaginated<RawUser>>("/users", {
     token,
-    query: { role: "FIELD_AGENT", page: 1, pageSize: 100 },
+    query: { role: "FIELD_OFFICER", page: 1, pageSize: 100 },
   });
   return { rows: (payload.rows ?? []).map(mapUser) };
 }
@@ -563,4 +565,5 @@ export async function createLocation(
   return mapLocation(unwrapData(payload));
 }
 
+export { isValidGhanaPhoneInput };
 export { ApiError, type ApiLocation, type ApiUser, type ApiComplaint };
