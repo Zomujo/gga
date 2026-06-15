@@ -662,7 +662,7 @@ export function CaseDetailsModal({
                             {officer.departmentName || "No department set"}
                           </span>
                           <span className="block text-xs text-gray-500">
-                            {formatDisplayText(officer.district)} ({officer.email})
+                            {officer.email}
                           </span>
                         </button>
                       ))
