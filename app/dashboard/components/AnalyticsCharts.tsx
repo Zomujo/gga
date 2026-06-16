@@ -66,7 +66,9 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
   const [officerPerformance, setOfficerPerformance] = useState<any[]>([]);
   const [weeklyActivity, setWeeklyActivity] = useState<any[]>([]);
   const [escalationAnalytics, setEscalationAnalytics] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [coreLoading, setCoreLoading] = useState(true);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [showMoreAnalytics, setShowMoreAnalytics] = useState(false);
   const escalationByCategory = Array.isArray(escalationAnalytics?.byCategory)
     ? escalationAnalytics.byCategory
     : [];
@@ -85,57 +87,82 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
   };
 
   useEffect(() => {
-    const loadChartData = async () => {
-      setLoading(true);
+    const loadCoreChartData = async () => {
+      setCoreLoading(true);
       try {
-        // Only pass district if it's not empty
         const locationFilter = locationId && locationId !== "" ? locationId : undefined;
-        
         const [
-          location, 
           category, 
           status, 
           trend, 
-          performance,
           responseTime,
           resolutionTime,
-          officers,
           weeklyPattern,
           escalations,
         ] = await Promise.all([
-          getCasesByLocation(token),
           getCasesByCategory(token, locationFilter),
           getCasesByStatus(token, locationFilter),
           getCasesTrend(token, locationFilter),
-          getLocationPerformance(token),
           getResponseTimeDistribution(token, locationFilter),
           getResolutionTimeByCategory(token, locationFilter),
-          getDistrictOfficerPerformance(token),
           getWeeklyActivityPattern(token, locationFilter),
           getEscalationAnalytics(token, locationFilter),
         ]);
 
-        setCasesByLocation(location);
         setCasesByCategory(category);
         setCasesByStatus(status);
         setCasesTrend(trend);
-        setLocationPerformance(performance);
         setResponseTimeDistribution(responseTime);
         setResolutionTimeByCategory(resolutionTime);
-        setOfficerPerformance(officers);
         setWeeklyActivity(weeklyPattern);
         setEscalationAnalytics(escalations);
       } catch (error) {
         console.error("Failed to load chart data:", error);
       } finally {
-        setLoading(false);
+        setCoreLoading(false);
       }
     };
 
-    loadChartData();
+    loadCoreChartData();
   }, [token, locationId]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!showMoreAnalytics) return;
+
+    let cancelled = false;
+
+    const loadMoreAnalytics = async () => {
+      setMoreLoading(true);
+      try {
+        const [location, performance, officers] = await Promise.all([
+          getCasesByLocation(token),
+          getLocationPerformance(token),
+          getDistrictOfficerPerformance(token),
+        ]);
+
+        if (cancelled) return;
+        setCasesByLocation(location);
+        setLocationPerformance(performance);
+        setOfficerPerformance(officers);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load extended analytics:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setMoreLoading(false);
+        }
+      }
+    };
+
+    void loadMoreAnalytics();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showMoreAnalytics, token]);
+
+  if (coreLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-12">
         <div className="text-center">
@@ -153,72 +180,6 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
   return (
     <div className="space-y-8">
       {/* Cases by Location - Only show when no location filter */}
-      {(!locationId || locationId === "") && (
-        <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Cases by Location
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">Distribution across all locations</p>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={casesByLocation} barGap={8}>
-              <defs>
-                <linearGradient id="barPending" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.yellow} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.yellow} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="barInProgress" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="barResolved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="barRejected" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.red} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.red} stopOpacity={0.7} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis 
-                dataKey="location" 
-                stroke="#9ca3af" 
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-              />
-              <YAxis 
-                stroke="#9ca3af" 
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(255, 255, 255, 0.98)",
-                  border: "none",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-                  padding: "12px 16px",
-                }}
-                cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
-              />
-              <Legend 
-                wrapperStyle={{ paddingTop: '20px' }}
-                iconType="circle"
-              />
-              <Bar dataKey="pending" stackId="a" fill="url(#barPending)" name="Pending" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="inProgress" stackId="a" fill="url(#barInProgress)" name="In Progress" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="resolved" stackId="a" fill="url(#barResolved)" name="Resolved" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="rejected" stackId="a" fill="url(#barRejected)" name="Rejected" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Trend Over Time */}
       <div className="group rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
         <div className="mb-6 flex items-center justify-between">
@@ -407,83 +368,6 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
         </div>
       </div>
 
-      {/* Location Performance Comparison - Only show when no location filter */}
-      {(!locationId || locationId === "") && (
-        <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Location Performance Comparison
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">Key metrics across all locations</p>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={locationPerformance} barGap={12}>
-              <defs>
-                <linearGradient id="perfResolution" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="perfResponse" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.orange} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.orange} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="perfActive" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis 
-                dataKey="location" 
-                stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-              />
-              <YAxis 
-                stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(255, 255, 255, 0.98)",
-                  border: "none",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-                  padding: "12px 16px",
-                }}
-                cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
-              />
-              <Legend 
-                wrapperStyle={{ paddingTop: '20px' }}
-                iconType="circle"
-              />
-              <Bar 
-                dataKey="resolutionRate" 
-                fill="url(#perfResolution)" 
-                name="Resolution Rate (%)"
-                radius={[8, 8, 0, 0]}
-              />
-              <Bar 
-                dataKey="avgResponseHours" 
-                fill="url(#perfResponse)" 
-                name="Avg Response (hours)"
-                radius={[8, 8, 0, 0]}
-              />
-              <Bar 
-                dataKey="activeCases" 
-                fill="url(#perfActive)" 
-                name="Active Cases"
-                radius={[8, 8, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Response Time Distribution */}
       <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
         <div className="mb-6">
@@ -659,74 +543,6 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
         </div>
       </div>
 
-      {/* Staff Officer Performance - Only show when no location filter */}
-      {(!locationId || locationId === "") && staffOfficerPerformance.length > 0 && (
-        <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900">
-              Staff Officer Performance
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">Individual staff workload and resolution outcomes</p>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={staffOfficerPerformance}>
-              <defs>
-                <linearGradient id="navResolved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
-                </linearGradient>
-                <linearGradient id="navTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-              <XAxis 
-                dataKey="name" 
-                stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                angle={-15}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis 
-                stroke="#9ca3af"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(255, 255, 255, 0.98)",
-                  border: "none",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-                  padding: "12px 16px",
-                }}
-                cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
-              />
-              <Legend 
-                wrapperStyle={{ paddingTop: '20px' }}
-                iconType="circle"
-              />
-              <Bar 
-                dataKey="totalCases" 
-                fill="url(#navTotal)" 
-                name="Total Cases"
-                radius={[8, 8, 0, 0]}
-              />
-              <Bar 
-                dataKey="resolved" 
-                fill="url(#navResolved)" 
-                name="Resolved"
-                radius={[8, 8, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Escalation Analytics */}
       {escalationAnalytics && (
         <div className="grid gap-8 lg:grid-cols-3">
@@ -833,6 +649,252 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
           )}
         </div>
       </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              More Analytics
+            </h3>
+            <p className="text-sm text-gray-600">
+              Cross-district and global comparisons that are not tied to the selected district or town.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            onClick={() => setShowMoreAnalytics((current) => !current)}
+          >
+            {showMoreAnalytics ? "Hide More Analytics" : "Show More Analytics"}
+          </button>
+        </div>
+      </div>
+
+      {showMoreAnalytics && (
+        <>
+          {moreLoading ? (
+            <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <div className="text-center">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-emerald-600" />
+                <p className="mt-4 text-sm font-medium text-gray-700">
+                  Loading more analytics...
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {(!locationId || locationId === "") && (
+                <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        Cases by Location
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">Distribution across all locations</p>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={casesByLocation} barGap={8}>
+                      <defs>
+                        <linearGradient id="barPending" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.yellow} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.yellow} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="barInProgress" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="barResolved" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="barRejected" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.red} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.red} stopOpacity={0.7} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                      <XAxis 
+                        dataKey="location" 
+                        stroke="#9ca3af" 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af" 
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.98)",
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+                          padding: "12px 16px",
+                        }}
+                        cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                      />
+                      <Bar dataKey="pending" stackId="a" fill="url(#barPending)" name="Pending" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="inProgress" stackId="a" fill="url(#barInProgress)" name="In Progress" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="resolved" stackId="a" fill="url(#barResolved)" name="Resolved" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="rejected" stackId="a" fill="url(#barRejected)" name="Rejected" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {(!locationId || locationId === "") && (
+                <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        Location Performance Comparison
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">Key metrics across all locations</p>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={locationPerformance} barGap={12}>
+                      <defs>
+                        <linearGradient id="perfResolution" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="perfResponse" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.orange} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.orange} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="perfActive" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                      <XAxis 
+                        dataKey="location" 
+                        stroke="#9ca3af"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.98)",
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+                          padding: "12px 16px",
+                        }}
+                        cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                      />
+                      <Bar 
+                        dataKey="resolutionRate" 
+                        fill="url(#perfResolution)" 
+                        name="Resolution Rate (%)"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="avgResponseHours" 
+                        fill="url(#perfResponse)" 
+                        name="Avg Response (hours)"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="activeCases" 
+                        fill="url(#perfActive)" 
+                        name="Active Cases"
+                        radius={[8, 8, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {(!locationId || locationId === "") && staffOfficerPerformance.length > 0 && (
+                <div className="group rounded-2xl border border-gray-200 bg-white p-8 shadow-lg transition-all duration-300 hover:shadow-xl">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Staff Officer Performance
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">Individual staff workload and resolution outcomes</p>
+                  </div>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={staffOfficerPerformance}>
+                      <defs>
+                        <linearGradient id="navResolved" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.emerald} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.emerald} stopOpacity={0.7} />
+                        </linearGradient>
+                        <linearGradient id="navTotal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.blue} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={COLORS.blue} stopOpacity={0.7} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#9ca3af"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                        angle={-15}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.98)",
+                          border: "none",
+                          borderRadius: "12px",
+                          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+                          padding: "12px 16px",
+                        }}
+                        cursor={{ fill: 'rgba(16, 185, 129, 0.05)' }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                      />
+                      <Bar 
+                        dataKey="totalCases" 
+                        fill="url(#navTotal)" 
+                        name="Total Cases"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="resolved" 
+                        fill="url(#navResolved)" 
+                        name="Resolved"
+                        radius={[8, 8, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
