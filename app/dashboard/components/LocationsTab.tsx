@@ -36,7 +36,7 @@ export function LocationsTab({
 }: LocationsTabProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const metroDistricts = locationOptions.filter(
-    (location) => location.type === "METRO_DISTRICT"
+    (location) => location.type === "METRO_DISTRICT",
   );
 
   const townsByParent = metroDistricts.map((metroDistrict) => ({
@@ -44,7 +44,7 @@ export function LocationsTab({
     towns: locationOptions.filter(
       (location) =>
         location.type === "TOWN" &&
-        location.parentLocationId === metroDistrict.value
+        location.parentLocationId === metroDistrict.value,
     ),
   }));
 
@@ -73,15 +73,11 @@ export function LocationsTab({
   const renderCreateForm = () => (
     <div className="mt-5 space-y-4">
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-gray-700">
-          Location type
-        </span>
+        <span className="text-sm font-medium text-gray-700">Location type</span>
         <select
           value={newLocationType}
           onChange={(e) =>
-            onNewLocationTypeChange(
-              e.target.value as "METRO_DISTRICT" | "TOWN"
-            )
+            onNewLocationTypeChange(e.target.value as "METRO_DISTRICT" | "TOWN")
           }
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
         >
@@ -112,16 +108,12 @@ export function LocationsTab({
 
       <label className="block space-y-1">
         <span className="text-sm font-medium text-gray-700">
-          {newLocationType === "TOWN"
-            ? "Town name"
-            : "Metro / district name"}
+          {newLocationType === "TOWN" ? "Town name" : "Metro / district name"}
         </span>
         <input
           type="text"
           placeholder={
-            newLocationType === "TOWN"
-              ? "e.g., Pepease"
-              : "e.g., Sekyerekumawu"
+            newLocationType === "TOWN" ? "e.g., Pepease" : "e.g., Sekyerekumawu"
           }
           value={newLocationName}
           onChange={(e) => onNewLocationNameChange(e.target.value)}
@@ -158,9 +150,6 @@ export function LocationsTab({
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-900">
-            Existing Hierarchy
-          </h3>
           <p className="mt-1 text-sm text-gray-600">{locationCountLabel}</p>
 
           <div className="mt-4 max-h-[32rem] space-y-4 overflow-auto pr-1">
@@ -179,19 +168,18 @@ export function LocationsTab({
                   key={metroDistrict.value}
                   className="rounded-xl border border-gray-200 bg-gray-50 p-4"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-gray-900">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium text-gray-500">
+                        District:
+                      </span>{" "}
+                      <span className="font-semibold text-gray-900">
                         {metroDistrict.label}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">
-                        Metro / District
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-600">
-                      {metroDistrict.towns.length} town
-                      {metroDistrict.towns.length === 1 ? "" : "s"}
-                    </span>
+                      </span>
+                    </p>
+                    <p className="mt-4 text-xs uppercase tracking-wide text-gray-500">
+                      Towns / Communities
+                    </p>
                   </div>
 
                   <div className="mt-4 space-y-2">
@@ -208,9 +196,7 @@ export function LocationsTab({
                           <p className="font-medium text-gray-900">
                             {town.label}
                           </p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Town
-                          </p>
+                          <p className="mt-1 text-xs text-gray-500">Town</p>
                         </div>
                       ))
                     )}
