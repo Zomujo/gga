@@ -24,6 +24,7 @@ import {
   type ApiDepartment,
   type ApiLocation,
 } from "@/lib/api";
+import { clearSessionCache } from "@/lib/storage";
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function DashboardClient() {
   const [activeTab, setActiveTab] = useState("cases");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [newCaseModal, setNewCaseModal] = useState(false);
+  const [syncingLatest, setSyncingLatest] = useState(false);
   const [adminDistrict, setAdminDistrict] = useState("");
   const [adminTown, setAdminTown] = useState("");
   const [hasInitializedLocationFilter, setHasInitializedLocationFilter] =
@@ -615,6 +617,80 @@ export default function DashboardClient() {
     [isAdmin, casesLocationFilter, refreshComplaints, setComplaintsPageSize]
   );
 
+  const handleSyncLatest = useCallback(async () => {
+    setSyncingLatest(true);
+    try {
+      clearSessionCache();
+
+      if (activeTab === "cases") {
+        const locationFilter = isAdmin ? casesLocationFilter : undefined;
+        await refreshComplaints(
+          locationFilter,
+          complaintsPage,
+          complaintsPageSize,
+          true
+        );
+        return;
+      }
+
+      if (activeTab === "monitoring" && isAdmin) {
+        await Promise.all([
+          refreshStats(monitoringLocationFilter, true),
+          refreshNavigatorUpdates(monitoringLocationFilter, true),
+          refreshOverdueComplaints(monitoringLocationFilter, true),
+        ]);
+        return;
+      }
+
+      if (activeTab === "locations") {
+        await loadLocations();
+        return;
+      }
+
+      if (activeTab === "departments" && isSuperAdmin) {
+        await loadDepartments();
+        return;
+      }
+
+      if (isAdmin) {
+        await Promise.all([
+          refreshStats(monitoringLocationFilter, true),
+          refreshNavigatorUpdates(monitoringLocationFilter, true),
+          refreshOverdueComplaints(monitoringLocationFilter, true),
+          refreshComplaints(
+            casesLocationFilter,
+            complaintsPage,
+            complaintsPageSize,
+            true
+          ),
+        ]);
+      } else {
+        await refreshComplaints(
+          undefined,
+          complaintsPage,
+          complaintsPageSize,
+          true
+        );
+      }
+    } finally {
+      setSyncingLatest(false);
+    }
+  }, [
+    activeTab,
+    isAdmin,
+    isSuperAdmin,
+    casesLocationFilter,
+    complaintsPage,
+    complaintsPageSize,
+    monitoringLocationFilter,
+    refreshComplaints,
+    refreshStats,
+    refreshNavigatorUpdates,
+    refreshOverdueComplaints,
+    loadLocations,
+    loadDepartments,
+  ]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "cases":
@@ -731,9 +807,9 @@ export default function DashboardClient() {
         onNewCase={() => setNewCaseModal(true)}
         profileMenuOpen={profileMenuOpen}
         setProfileMenuOpen={setProfileMenuOpen}
-        onRefresh={refreshComplaints}
+        onRefresh={handleSyncLatest}
         onLogout={handleLogout}
-        isLoading={complaintsLoading}
+        isLoading={syncingLatest}
       />
 
       {/* Main Content */}
