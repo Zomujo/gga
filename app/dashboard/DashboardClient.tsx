@@ -126,7 +126,9 @@ export default function DashboardClient() {
           )?.value ??
           districtOptions[0]?.value ??
           "";
-        setAdminDistrict(isSuperAdmin ? preferredDistrictId : "");
+        setAdminDistrict(
+          isSuperAdmin ? preferredDistrictId : currentUser?.locationId ?? ""
+        );
         setAdminTown("");
         setHasInitializedLocationFilter(true);
       }
@@ -137,7 +139,7 @@ export default function DashboardClient() {
     } finally {
       setLocationsLoading(false);
     }
-  }, [hasInitializedLocationFilter, isSuperAdmin]);
+  }, [hasInitializedLocationFilter, isSuperAdmin, currentUser?.locationId]);
 
   const loadDepartments = useCallback(async () => {
     if (!token || !isSuperAdmin) return;
@@ -166,15 +168,17 @@ export default function DashboardClient() {
     fetchNavigators,
   } = useMonitoring({ token, currentUser });
 
-  const monitoringLocationFilter = isSuperAdmin
-    ? adminTown || adminDistrict
-    : adminDistrict;
+  const monitoringLocationFilter = isAdmin ? adminTown || adminDistrict : "";
 
   const refreshStatsForAdmin = useCallback(() => {
     if (!token || !isAdmin) return;
     refreshStats(monitoringLocationFilter);
   }, [token, isAdmin, refreshStats, monitoringLocationFilter]);
-  const casesLocationFilter = isSuperAdmin ? adminTown || adminDistrict : undefined;
+  const forceRefreshStatsForAdmin = useCallback(() => {
+    if (!token || !isAdmin) return;
+    refreshStats(monitoringLocationFilter, true);
+  }, [token, isAdmin, refreshStats, monitoringLocationFilter]);
+  const casesLocationFilter = isAdmin ? adminTown || adminDistrict : undefined;
 
   const {
     liveComplaints,
@@ -213,7 +217,7 @@ export default function DashboardClient() {
   } = useComplaints({
     token,
     currentUser,
-    onStatsRefresh: refreshStatsForAdmin,
+    onStatsRefresh: forceRefreshStatsForAdmin,
     adminDistrict: isAdmin ? casesLocationFilter : undefined,
   });
 
@@ -350,7 +354,7 @@ export default function DashboardClient() {
     activeComplaint,
     onComplaintUpdate: updateComplaintInList,
     onSuccess: handleAssignSuccess,
-    onStatsRefresh: refreshStatsForAdmin,
+    onStatsRefresh: forceRefreshStatsForAdmin,
   });
 
   const {
@@ -374,19 +378,24 @@ export default function DashboardClient() {
     activeComplaint,
     onComplaintUpdate: updateComplaintInList,
     onSuccess: handleEscalateSuccess,
-    onStatsRefresh: refreshStatsForAdmin,
+    onStatsRefresh: forceRefreshStatsForAdmin,
   });
 
   // Initial data loading
   useEffect(() => {
     if (!token) return;
+    const routeTab = getTabFromPath(pathname, isAdmin);
     loadLocations();
     if (currentUser?.role === "district_officer") {
       refreshComplaints(undefined, 1, 200);
     } else if (!isSuperAdmin || adminDistrict) {
       refreshComplaints();
     }
-    if (isAdmin && (!isSuperAdmin || adminDistrict)) {
+    if (
+      isAdmin &&
+      routeTab === "monitoring" &&
+      (!isSuperAdmin || adminDistrict)
+    ) {
       refreshStatsForAdmin();
       refreshNavigatorUpdates(monitoringLocationFilter);
       refreshOverdueComplaints(monitoringLocationFilter);
@@ -413,6 +422,8 @@ export default function DashboardClient() {
     isAdmin,
     isSuperAdmin,
     loadDepartments,
+    pathname,
+    getTabFromPath,
   ]);
 
   useEffect(() => {
@@ -611,7 +622,7 @@ export default function DashboardClient() {
         return (
           <CasesTab
             isAdmin={isAdmin}
-            showTownFilter={isSuperAdmin}
+            showTownFilter={isAdmin}
             isDistrictOfficer={isDistrictOfficer}
             escalatedToMe={escalatedToMe}
             filteredComplaints={filteredComplaints}
@@ -673,7 +684,7 @@ export default function DashboardClient() {
             overdueComplaints={overdueComplaints}
             navigatorUpdates={navigatorUpdates}
             adminDistrict={adminDistrict}
-            showTownFilter={isSuperAdmin}
+            showTownFilter={isAdmin}
             adminTown={adminTown}
             onAdminTownChange={handleAdminTownChange}
             townOptions={townFilterOptions}

@@ -15,6 +15,11 @@ import {
   getStatusLabel,
   getFriendlyStatusUpdateError,
 } from "../utils/formatters";
+import {
+  clearSessionCache,
+  loadSessionCache,
+  saveSessionCache,
+} from "@/lib/storage";
 
 export interface ComplaintFormState {
   fullName: string;
@@ -83,6 +88,7 @@ export function useComplaints({
 }: UseComplaintsOptions) {
   const isAdminLike =
     currentUser?.role === "admin" || currentUser?.role === "super_admin";
+  const cacheScope = currentUser?.id ?? "anonymous";
   const [liveComplaints, setLiveComplaints] = useState<ApiComplaint[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [complaintsError, setComplaintsError] = useState<string | null>(null);
@@ -126,15 +132,32 @@ export function useComplaints({
     async (
       districtOverride?: string,
       pageOverride?: number,
-      pageSizeOverride?: number
+      pageSizeOverride?: number,
+      force = false
     ) => {
       if (!token) return;
-      setComplaintsLoading(true);
+      const resolvedAdminDistrict = districtOverride ?? adminDistrict;
+      const resolvedPage = pageOverride ?? complaintsPage;
+      const resolvedPageSize = pageSizeOverride ?? complaintsPageSize;
+      const cacheKey = `complaints:${cacheScope}:${resolvedAdminDistrict ?? "all"}:${resolvedPage}:${resolvedPageSize}`;
+      const cached = loadSessionCache<{
+        rows: ApiComplaint[];
+        total: number;
+        page: number;
+        pageSize: number;
+      }>(cacheKey);
+
+      if (cached) {
+        setLiveComplaints(cached.rows || []);
+        setComplaintsTotal(cached.total);
+        setComplaintsPage(cached.page);
+        setComplaintsPageSize(cached.pageSize);
+        if (!force) return;
+      }
+
+      setComplaintsLoading(!cached);
       setComplaintsError(null);
       try {
-        const resolvedAdminDistrict = districtOverride ?? adminDistrict;
-        const resolvedPage = pageOverride ?? complaintsPage;
-        const resolvedPageSize = pageSizeOverride ?? complaintsPageSize;
         const options: { district?: string; page?: number; pageSize?: number } =
           {
             page: resolvedPage,
@@ -148,16 +171,20 @@ export function useComplaints({
         setComplaintsTotal(response.total);
         setComplaintsPage(response.page);
         setComplaintsPageSize(response.pageSize);
+        saveSessionCache(cacheKey, response);
       } catch (error) {
-        setComplaintsError(
-          error instanceof Error ? error.message : "Failed to load complaints"
-        );
+        if (!cached) {
+          setComplaintsError(
+            error instanceof Error ? error.message : "Failed to load complaints"
+          );
+        }
       } finally {
         setComplaintsLoading(false);
       }
     },
     [
       token,
+      cacheScope,
       isAdminLike,
       adminDistrict,
       complaintsPage,
@@ -192,7 +219,8 @@ export function useComplaints({
             ? await submitComplaintByNavigator(token, base)
             : await submitComplaintApi(token, createPayload);
 
-        await refreshComplaints();
+        clearSessionCache(`complaints:${cacheScope}:`);
+        await refreshComplaints(undefined, undefined, undefined, true);
 
         setComplaintForm(getInitialFormState(currentUser));
         setComplaintStatus(
@@ -210,7 +238,7 @@ export function useComplaints({
         setComplaintSubmitting(false);
       }
     },
-    [token, complaintForm, refreshComplaints, currentUser]
+    [token, complaintForm, refreshComplaints, currentUser, cacheScope]
   );
 
   const resetComplaintForm = useCallback(() => {

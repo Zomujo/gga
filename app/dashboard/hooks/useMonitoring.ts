@@ -11,6 +11,7 @@ import {
   type NavigatorUpdate,
   type ComplaintStatsWithTrends,
 } from "@/lib/api";
+import { loadSessionCache, saveSessionCache } from "@/lib/storage";
 
 interface UseMonitoringOptions {
   token: string | null;
@@ -28,6 +29,8 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
     []
   );
   const [navigators, setNavigators] = useState<ApiUser[]>([]);
+
+  const cacheScope = currentUser?.id ?? "anonymous";
 
   const monitoringMetrics = useMemo(
     () => [
@@ -72,21 +75,34 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
   );
 
   const refreshStats = useCallback(
-    async (district?: string) => {
+    async (district?: string, force = false) => {
       if (!token) return;
+      const cacheKey = `monitoring:stats:${cacheScope}:${district ?? "all"}`;
+      const cached = loadSessionCache<ComplaintStatsWithTrends>(cacheKey);
+      if (cached) {
+        setMonitoringStats(cached);
+        if (!force) return;
+      }
       try {
         const stats = await getComplaintStats(token, { district });
         setMonitoringStats(stats);
+        saveSessionCache(cacheKey, stats);
       } catch (error) {
         console.error("Failed to load stats:", error);
       }
     },
-    [token]
+    [token, cacheScope]
   );
 
   const refreshNavigatorUpdates = useCallback(
-    async (district?: string) => {
+    async (district?: string, force = false) => {
       if (!token) return;
+      const cacheKey = `monitoring:updates:${cacheScope}:${district ?? "all"}`;
+      const cached = loadSessionCache<NavigatorUpdate[]>(cacheKey);
+      if (cached) {
+        setNavigatorUpdates(cached);
+        if (!force) return;
+      }
       try {
         const updates = await getNavigatorUpdates(token, {
           district,
@@ -94,22 +110,30 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
           pageSize: 10,
         });
         setNavigatorUpdates(updates);
+        saveSessionCache(cacheKey, updates);
       } catch (error) {
         console.error("Failed to load navigator updates:", error);
       }
     },
-    [token]
+    [token, cacheScope]
   );
 
-  const refreshOverdueComplaints = useCallback(async (district?: string) => {
+  const refreshOverdueComplaints = useCallback(async (district?: string, force = false) => {
     if (!token) return;
+    const cacheKey = `monitoring:overdue:${cacheScope}:${district ?? "all"}`;
+    const cached = loadSessionCache<ApiComplaint[]>(cacheKey);
+    if (cached) {
+      setOverdueComplaints(cached);
+      if (!force) return;
+    }
     try {
       const complaints = await getOverdueComplaints(token, district);
       setOverdueComplaints(complaints);
+      saveSessionCache(cacheKey, complaints);
     } catch (error) {
       console.error("Failed to load overdue complaints:", error);
     }
-  }, [token]);
+  }, [token, cacheScope]);
 
   const fetchNavigators = useCallback(async () => {
     if (!token || !isAdminLike) return;
