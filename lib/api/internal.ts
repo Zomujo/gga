@@ -400,7 +400,7 @@ export async function getComplaintStats(
         query: { locationId },
       }
     );
-    return unwrapData(payload);
+    return unwrapData<ComplaintStatsWithTrends>(payload);
   }
 
   const stats = await Promise.all(
@@ -412,7 +412,7 @@ export async function getComplaintStats(
           query: { locationId: townId },
         }
       );
-      return unwrapData(payload);
+      return unwrapData<ComplaintStatsWithTrends>(payload);
     })
   );
 
@@ -1061,4 +1061,10 @@ export async function createLocation(
 }
 
 export { isValidGhanaPhoneInput };
-export { ApiError, type ApiLocation, type ApiUser, type ApiComplaint };
+export {
+  ApiError,
+  type ApiLocation,
+  type ApiUser,
+  type ApiComplaint,
+  type ApiDepartment,
+};
