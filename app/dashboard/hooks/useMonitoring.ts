@@ -101,10 +101,10 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
     [token]
   );
 
-  const refreshOverdueComplaints = useCallback(async () => {
+  const refreshOverdueComplaints = useCallback(async (district?: string) => {
     if (!token) return;
     try {
-      const complaints = await getOverdueComplaints(token);
+      const complaints = await getOverdueComplaints(token, district);
       setOverdueComplaints(complaints);
     } catch (error) {
       console.error("Failed to load overdue complaints:", error);

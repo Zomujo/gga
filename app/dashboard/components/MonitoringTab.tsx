@@ -6,11 +6,6 @@ import { AlertsSection } from "./AlertsSection";
 import { NavigatorUpdates } from "./NavigatorUpdates";
 import { AnalyticsCharts } from "./AnalyticsCharts";
 
-interface LocationOption {
-  value: string;
-  label: string;
-}
-
 interface MetricItem {
   label: string;
   value: number | string;
@@ -24,10 +19,11 @@ interface MonitoringTabProps {
   monitoringMetrics: MetricItem[];
   overdueComplaints: ApiComplaint[];
   navigatorUpdates: NavigatorUpdate[];
-  isAdmin?: boolean;
   adminDistrict?: string;
-  onAdminDistrictChange?: (district: string) => void;
-  locationOptions?: LocationOption[];
+  showTownFilter?: boolean;
+  adminTown?: string;
+  onAdminTownChange?: (town: string) => void;
+  townOptions?: { value: string; label: string }[];
 }
 
 export function MonitoringTab({
@@ -35,10 +31,11 @@ export function MonitoringTab({
   monitoringMetrics,
   overdueComplaints,
   navigatorUpdates,
-  isAdmin,
   adminDistrict,
-  onAdminDistrictChange,
-  locationOptions = [],
+  showTownFilter = false,
+  adminTown,
+  onAdminTownChange,
+  townOptions = [],
 }: MonitoringTabProps) {
   return (
     <div className="space-y-6">
@@ -49,17 +46,17 @@ export function MonitoringTab({
           </h2>
           <p className="text-gray-600">Comprehensive insights and performance metrics</p>
         </div>
-
-        {isAdmin && onAdminDistrictChange && (
+        {showTownFilter && (
           <label className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-gray-700">Location Filter</span>
+            <span className="font-medium text-gray-700">Town</span>
             <select
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-              value={adminDistrict || ""}
-              onChange={(e) => onAdminDistrictChange(e.target.value)}
+              value={adminTown || ""}
+              onChange={(e) => onAdminTownChange?.(e.target.value)}
+              disabled={!townOptions.length}
             >
-              <option value="">All Locations</option>
-              {locationOptions.map((opt) => (
+              <option value="">All Towns</option>
+              {townOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -73,7 +70,7 @@ export function MonitoringTab({
       <MetricsGrid metrics={monitoringMetrics} />
 
       {/* Analytics Charts */}
-      <AnalyticsCharts token={token} locationId={adminDistrict} />
+      <AnalyticsCharts token={token} locationId={adminTown || adminDistrict} />
 
       {/* Alerts Section */}
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">

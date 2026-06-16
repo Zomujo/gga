@@ -12,6 +12,9 @@ interface DashboardNavProps {
   isSuperAdmin: boolean;
   isNavigator: boolean;
   isDistrictOfficer: boolean;
+  districtOptions?: { value: string; label: string }[];
+  selectedDistrict?: string;
+  onDistrictChange?: (district: string) => void;
   onNewCase: () => void;
   profileMenuOpen: boolean;
   setProfileMenuOpen: (open: boolean) => void;
@@ -28,6 +31,9 @@ export function DashboardNav({
   isSuperAdmin,
   isNavigator,
   isDistrictOfficer,
+  districtOptions = [],
+  selectedDistrict,
+  onDistrictChange,
   onNewCase,
   profileMenuOpen,
   setProfileMenuOpen,
@@ -65,6 +71,24 @@ export function DashboardNav({
             </div>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
+            {isSuperAdmin && districtOptions.length > 0 && onDistrictChange && (
+              <label className="hidden items-center gap-2 sm:flex">
+                <span className="text-xs font-medium text-gray-600">
+                  District
+                </span>
+                <select
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  value={selectedDistrict || ""}
+                  onChange={(e) => onDistrictChange(e.target.value)}
+                >
+                  {districtOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {(isAdmin || isNavigator) && !isDistrictOfficer && (
               <div className="hidden h-10 w-auto items-center justify-center overflow-hidden sm:flex">
                 <button
@@ -87,12 +111,30 @@ export function DashboardNav({
         </div>
 
         {(isAdmin || isNavigator) && !isDistrictOfficer && (
-          <button
-            onClick={onNewCase}
-            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 sm:hidden"
-          >
-            + New Report
-          </button>
+          <div className="space-y-3 sm:hidden">
+            {isSuperAdmin && districtOptions.length > 0 && onDistrictChange && (
+              <label className="block">
+                <span className="sr-only">District</span>
+                <select
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  value={selectedDistrict || ""}
+                  onChange={(e) => onDistrictChange(e.target.value)}
+                >
+                  {districtOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button
+              onClick={onNewCase}
+              className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              + New Report
+            </button>
+          </div>
         )}
 
         {(isAdmin || isNavigator || isDistrictOfficer) && (

@@ -2,6 +2,8 @@ import {
   ApiError,
   ensureLocationCache,
   fromBackendStatus,
+  getChildTownIds,
+  getLocationById,
   isValidGhanaPhoneInput,
   mapCase,
   mapDepartment,
@@ -86,14 +88,38 @@ export async function getComplaints(
 ): Promise<{ rows: ApiComplaint[]; total: number; page: number; pageSize: number }> {
   await ensureLocationCache(token);
   const locationId = await resolveLocationId(options?.district, token);
-  const query = { locationId, page: options?.page ?? 1, pageSize: options?.pageSize ?? 10 };
+  const selectedLocation = getLocationById(locationId);
+  const isMetroDistrict = selectedLocation?.type === "METRO_DISTRICT";
+  const childTownIds = isMetroDistrict ? getChildTownIds(locationId) : [];
+  const resolvedPage = options?.page ?? 1;
+  const resolvedPageSize = options?.pageSize ?? 10;
+  const query = { locationId, page: resolvedPage, pageSize: resolvedPageSize };
   let page: { rows: RawCase[]; total: number; page: number; pageSize: number };
   try {
-    const payload = await request<RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>>("/cases", {
+    const payload = await request<
+      RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>
+    >("/cases", {
       token,
-      query,
+      query: isMetroDistrict
+        ? { page: 1, pageSize: 1000 }
+        : query,
     });
-    page = unwrapPaginated<RawCase>(payload);
+    const resolvedPage = unwrapPaginated<RawCase>(payload);
+    if (isMetroDistrict) {
+      const filteredRows = resolvedPage.rows.filter((item) =>
+        childTownIds.includes(item.locationId ?? "")
+      );
+      const pageStart = (query.page - 1) * query.pageSize;
+      page = {
+        ...resolvedPage,
+        rows: filteredRows.slice(pageStart, pageStart + query.pageSize),
+        total: filteredRows.length,
+        page: query.page,
+        pageSize: query.pageSize,
+      };
+    } else {
+      page = resolvedPage;
+    }
   } catch (error) {
     if (!(error instanceof ApiError) || error.status < 500 || !locationId) throw error;
     const fallbackPayload = await request<RawPaginated<RawCase> | RawApiSuccess<RawPaginated<RawCase>>>(
@@ -345,39 +371,114 @@ export interface NavigatorUpdate {
   updatedAt: string;
 }
 
+async function getScopedLocationContext(token: string, district?: string) {
+  await ensureLocationCache(token);
+  const locationId = await resolveLocationId(district, token);
+  const selectedLocation = getLocationById(locationId);
+  const isMetroDistrict = selectedLocation?.type === "METRO_DISTRICT";
+  const childTownIds = isMetroDistrict ? getChildTownIds(locationId) : [];
+
+  return {
+    locationId,
+    isMetroDistrict,
+    childTownIds,
+  };
+}
+
 export async function getComplaintStats(
   token: string,
   options?: { district?: string }
 ): Promise<ComplaintStatsWithTrends> {
-  const locationId = await resolveLocationId(options?.district, token);
-  const payload = await request<RawApiSuccess<ComplaintStatsWithTrends>>("/analytics/stats", {
-    token,
-    query: { locationId },
-  });
-  return unwrapData(payload);
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, options?.district);
+
+  if (!isMetroDistrict) {
+    const payload = await request<RawApiSuccess<ComplaintStatsWithTrends>>(
+      "/analytics/stats",
+      {
+        token,
+        query: { locationId },
+      }
+    );
+    return unwrapData(payload);
+  }
+
+  const stats = await Promise.all(
+    childTownIds.map(async (townId) => {
+      const payload = await request<RawApiSuccess<ComplaintStatsWithTrends>>(
+        "/analytics/stats",
+        {
+          token,
+          query: { locationId: townId },
+        }
+      );
+      return unwrapData(payload);
+    })
+  );
+
+  const totalActiveCases = stats.reduce(
+    (sum, item) => sum + (item.activeCases ?? 0),
+    0
+  );
+  const responseWeight = totalActiveCases || stats.length || 1;
+
+  return {
+    activeCases: totalActiveCases,
+    avgResponseHours:
+      stats.reduce(
+        (sum, item) =>
+          sum + (item.avgResponseHours ?? 0) * (item.activeCases ?? 1),
+        0
+      ) / responseWeight,
+    resolutionRate:
+      stats.reduce(
+        (sum, item) =>
+          sum + (item.resolutionRate ?? 0) * (item.activeCases ?? 1),
+        0
+      ) / responseWeight,
+    overdueCases: stats.reduce(
+      (sum, item) => sum + (item.overdueCases ?? 0),
+      0
+    ),
+    activeCasesChange: stats.reduce(
+      (sum, item) => sum + (item.activeCasesChange ?? 0),
+      0
+    ),
+    avgResponseHoursChange:
+      stats.reduce(
+        (sum, item) =>
+          sum + (item.avgResponseHoursChange ?? 0) * (item.activeCases ?? 1),
+        0
+      ) / responseWeight,
+    resolutionRateChange:
+      stats.reduce(
+        (sum, item) =>
+          sum + (item.resolutionRateChange ?? 0) * (item.activeCases ?? 1),
+        0
+      ) / responseWeight,
+    overdueCasesChange: stats.reduce(
+      (sum, item) => sum + (item.overdueCasesChange ?? 0),
+      0
+    ),
+  };
 }
 
 export async function getNavigatorUpdates(
   token: string,
   options?: { district?: string; page?: number; pageSize?: number }
 ): Promise<NavigatorUpdate[]> {
-  const locationId = await resolveLocationId(options?.district, token);
-  const payload = await request<
-    RawPaginated<{
-      id: string;
-      caseId: string;
-      caseCode: string;
-      agentName: string;
-      agentEmail: string;
-      oldStatus: string;
-      newStatus: string;
-      updatedAt: string;
-    }>
-  >("/analytics/recent-activity", {
-    token,
-    query: { locationId, page: options?.page ?? 1, pageSize: options?.pageSize ?? 10 },
-  });
-  return (payload.rows ?? []).map((item) => ({
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, options?.district);
+  const mapUpdate = (item: {
+    id: string;
+    caseId: string;
+    caseCode: string;
+    agentName: string;
+    agentEmail: string;
+    oldStatus: string;
+    newStatus: string;
+    updatedAt: string;
+  }) => ({
     id: item.id,
     complaintId: item.caseId,
     complaintTitle: `Case ${item.caseCode}`,
@@ -386,12 +487,92 @@ export async function getNavigatorUpdates(
     oldStatus: fromBackendStatus(item.oldStatus),
     newStatus: fromBackendStatus(item.newStatus),
     updatedAt: item.updatedAt,
-  }));
+  });
+
+  if (!isMetroDistrict) {
+    const payload = await request<
+      RawPaginated<{
+        id: string;
+        caseId: string;
+        caseCode: string;
+        agentName: string;
+        agentEmail: string;
+        oldStatus: string;
+        newStatus: string;
+        updatedAt: string;
+      }>
+    >("/analytics/recent-activity", {
+      token,
+      query: {
+        locationId,
+        page: options?.page ?? 1,
+        pageSize: options?.pageSize ?? 10,
+      },
+    });
+    return (payload.rows ?? []).map(mapUpdate);
+  }
+
+  const pages = await Promise.all(
+    childTownIds.map((townId) =>
+      request<
+        RawPaginated<{
+          id: string;
+          caseId: string;
+          caseCode: string;
+          agentName: string;
+          agentEmail: string;
+          oldStatus: string;
+          newStatus: string;
+          updatedAt: string;
+        }>
+      >("/analytics/recent-activity", {
+        token,
+        query: { locationId: townId, page: 1, pageSize: 20 },
+      })
+    )
+  );
+
+  const merged = pages
+    .flatMap((page) => page.rows ?? [])
+    .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
+
+  const start = ((options?.page ?? 1) - 1) * (options?.pageSize ?? 10);
+  return merged.slice(start, start + (options?.pageSize ?? 10)).map(mapUpdate);
 }
 
-export async function getOverdueComplaints(token: string): Promise<ApiComplaint[]> {
-  const payload = await request<RawApiSuccess<RawCase[]>>("/analytics/overdue-cases", { token });
-  return unwrapArray<RawCase>(payload).map(mapCase);
+export async function getOverdueComplaints(
+  token: string,
+  district?: string
+): Promise<ApiComplaint[]> {
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  if (!isMetroDistrict) {
+    const payload = await request<RawApiSuccess<RawCase[]>>(
+      "/analytics/overdue-cases",
+      { token, query: { locationId } }
+    );
+    return unwrapArray<RawCase>(payload).map(mapCase);
+  }
+
+  const results = await Promise.all(
+    childTownIds.map((townId) =>
+      request<RawApiSuccess<RawCase[]>>("/analytics/overdue-cases", {
+        token,
+        query: { locationId: townId },
+      })
+    )
+  );
+
+  const seen = new Set<string>();
+  return results
+    .flatMap((payload) => unwrapArray<RawCase>(payload))
+    .filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    })
+    .map(mapCase);
 }
 
 export async function getCasesByAssembly(token: string) {
@@ -409,7 +590,19 @@ export async function getCasesByAssembly(token: string) {
       }>
     >
   >("/analytics/cases-by-location", { token });
-  const rows = unwrapData<Array<any>>(payload) ?? [];
+  const rows =
+    unwrapData<
+      Array<{
+        location: string;
+        total: number;
+        received: number;
+        assigned: number;
+        inProgress: number;
+        resolved: number;
+        closedWithReasons: number;
+        escalated: number;
+      }>
+    >(payload) ?? [];
   return rows.map((row) => ({
     assembly: row.location,
     total: row.total,
@@ -426,24 +619,72 @@ export async function getCasesByLocation(token: string) {
 }
 
 export async function getCasesByCategory(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ category: string; count: number }>>>(
-    "/analytics/cases-by-category",
-    { token, query: { locationId } }
-  );
-  return unwrapArray<{ category: string; count: number }>(payload).map((row) => ({
-    category: toDisplayLabel(row.category),
-    count: row.count,
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const rows = !isMetroDistrict
+    ? unwrapArray<{ category: string; count: number }>(
+        await request<RawApiSuccess<Array<{ category: string; count: number }>>>(
+          "/analytics/cases-by-category",
+          { token, query: { locationId } }
+        )
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ category: string; count: number }>(
+              await request<
+                RawApiSuccess<Array<{ category: string; count: number }>>
+              >("/analytics/cases-by-category", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
+  const grouped = rows.reduce<Record<string, number>>((acc, row) => {
+    acc[row.category] = (acc[row.category] ?? 0) + row.count;
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).map(([category, count]) => ({
+    category: toDisplayLabel(category),
+    count,
   }));
 }
 
 export async function getCasesByStatus(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ status: string; count: number; percentage: number }>>>(
-    "/analytics/cases-by-status",
-    { token, query: { locationId } }
-  );
-  const rows = unwrapData<Array<{ status: string; count: number; percentage: number }>>(payload) ?? [];
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const rows = !isMetroDistrict
+    ? unwrapArray<{ status: string; count: number; percentage: number }>(
+        await request<
+          RawApiSuccess<Array<{ status: string; count: number; percentage: number }>>
+        >("/analytics/cases-by-status", {
+          token,
+          query: { locationId },
+        })
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ status: string; count: number; percentage: number }>(
+              await request<
+                RawApiSuccess<
+                  Array<{ status: string; count: number; percentage: number }>
+                >
+              >("/analytics/cases-by-status", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
   const grouped = rows.reduce<Record<string, { status: string; count: number }>>((acc, row) => {
     const label = toDisplayStatus(row.status);
     if (!acc[label]) {
@@ -464,13 +705,53 @@ export async function getCasesByStatus(token: string, district?: string) {
 }
 
 export async function getCasesTrend(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ day: string; received: number; resolved: number }>>>(
-    "/analytics/cases-trend",
-    { token, query: { locationId } }
-  );
-  return (unwrapData<Array<{ day: string; received: number; resolved: number }>>(payload) ?? []).map((row) => ({
-    date: new Date(row.day).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const rows = !isMetroDistrict
+    ? unwrapArray<{ day: string; received: number; resolved: number }>(
+        await request<
+          RawApiSuccess<Array<{ day: string; received: number; resolved: number }>>
+        >("/analytics/cases-trend", {
+          token,
+          query: { locationId },
+        })
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ day: string; received: number; resolved: number }>(
+              await request<
+                RawApiSuccess<
+                  Array<{ day: string; received: number; resolved: number }>
+                >
+              >("/analytics/cases-trend", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
+  const grouped = rows.reduce<
+    Record<string, { day: string; received: number; resolved: number }>
+  >((acc, row) => {
+    if (!acc[row.day]) {
+      acc[row.day] = { day: row.day, received: 0, resolved: 0 };
+    }
+    acc[row.day].received += row.received;
+    acc[row.day].resolved += row.resolved;
+    return acc;
+  }, {});
+
+  return Object.values(grouped)
+    .sort((a, b) => +new Date(a.day) - +new Date(b.day))
+    .map((row) => ({
+    date: new Date(row.day).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
     submitted: row.received,
     resolved: row.resolved,
   }));
@@ -480,7 +761,12 @@ export async function getAssemblyPerformance(token: string) {
   const payload = await request<
     RawApiSuccess<Array<{ location: string; resolutionRate: number; avgResponseHours: number; activeCases: number }>>
   >("/analytics/location-performance", { token });
-  return (unwrapData<Array<any>>(payload) ?? []).map((row) => ({
+  return unwrapArray<{
+    location: string;
+    resolutionRate: number;
+    avgResponseHours: number;
+    activeCases: number;
+  }>(payload).map((row) => ({
     assembly: row.location,
     resolutionRate: row.resolutionRate,
     avgResponseHours: row.avgResponseHours,
@@ -494,23 +780,84 @@ export async function getLocationPerformance(token: string) {
 }
 
 export async function getResponseTimeDistribution(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ bucket: string; count: number }>>>(
-    "/analytics/response-time-distribution",
-    { token, query: { locationId } }
-  );
-  return unwrapArray<{ bucket: string; count: number }>(payload);
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const rows = !isMetroDistrict
+    ? unwrapArray<{ bucket: string; count: number }>(
+        await request<RawApiSuccess<Array<{ bucket: string; count: number }>>>(
+          "/analytics/response-time-distribution",
+          { token, query: { locationId } }
+        )
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ bucket: string; count: number }>(
+              await request<
+                RawApiSuccess<Array<{ bucket: string; count: number }>>
+              >("/analytics/response-time-distribution", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
+  const grouped = rows.reduce<Record<string, number>>((acc, row) => {
+    acc[row.bucket] = (acc[row.bucket] ?? 0) + row.count;
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).map(([bucket, count]) => ({ bucket, count }));
 }
 
 export async function getResolutionTimeByCategory(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ category: string; avgDays: number; count: number }>>>(
-    "/analytics/resolution-time-by-category",
-    { token, query: { locationId } }
-  );
-  return unwrapArray<{ category: string; avgDays: number; count: number }>(payload).map((row) => ({
-    ...row,
-    category: toDisplayLabel(row.category),
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const rows = !isMetroDistrict
+    ? unwrapArray<{ category: string; avgDays: number; count: number }>(
+        await request<
+          RawApiSuccess<Array<{ category: string; avgDays: number; count: number }>>
+        >("/analytics/resolution-time-by-category", {
+          token,
+          query: { locationId },
+        })
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ category: string; avgDays: number; count: number }>(
+              await request<
+                RawApiSuccess<
+                  Array<{ category: string; avgDays: number; count: number }>
+                >
+              >("/analytics/resolution-time-by-category", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
+  const grouped = rows.reduce<
+    Record<string, { totalDays: number; count: number }>
+  >((acc, row) => {
+    if (!acc[row.category]) {
+      acc[row.category] = { totalDays: 0, count: 0 };
+    }
+    acc[row.category].totalDays += row.avgDays * row.count;
+    acc[row.category].count += row.count;
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).map(([category, value]) => ({
+    category: toDisplayLabel(category),
+    avgDays: value.count > 0 ? value.totalDays / value.count : 0,
+    count: value.count,
   }));
 }
 
@@ -522,12 +869,34 @@ export async function getDistrictOfficerPerformance(token: string) {
 }
 
 export async function getWeeklyActivityPattern(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<RawApiSuccess<Array<{ day: string; received: number; resolved: number }>>>(
-    "/analytics/cases-trend",
-    { token, query: { locationId } }
-  );
-  const trend = unwrapData<Array<{ day: string; received: number; resolved: number }>>(payload) ?? [];
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+  const trend = !isMetroDistrict
+    ? unwrapArray<{ day: string; received: number; resolved: number }>(
+        await request<
+          RawApiSuccess<Array<{ day: string; received: number; resolved: number }>>
+        >("/analytics/cases-trend", {
+          token,
+          query: { locationId },
+        })
+      )
+    : (
+        await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapArray<{ day: string; received: number; resolved: number }>(
+              await request<
+                RawApiSuccess<
+                  Array<{ day: string; received: number; resolved: number }>
+                >
+              >("/analytics/cases-trend", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        )
+      ).flat();
+
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const aggregate: Record<string, { submitted: number; resolved: number }> = {
     Sun: { submitted: 0, resolved: 0 },
@@ -547,21 +916,93 @@ export async function getWeeklyActivityPattern(token: string, district?: string)
 }
 
 export async function getEscalationAnalytics(token: string, district?: string) {
-  const locationId = await resolveLocationId(district, token);
-  const payload = await request<
-    RawApiSuccess<{
-      totalEscalated: number;
-      escalationRate: number;
-      avgDaysBeforeEscalation: number;
-      byCategory: { category: string; count: number; percentage: number }[];
-    }>
-  >("/analytics/escalations", { token, query: { locationId } });
-  const data = unwrapData<{
-    totalEscalated: number;
-    escalationRate: number;
-    avgDaysBeforeEscalation: number;
-    byCategory: { category: string; count: number; percentage: number }[];
-  }>(payload);
+  const { locationId, isMetroDistrict, childTownIds } =
+    await getScopedLocationContext(token, district);
+
+  const data = !isMetroDistrict
+    ? unwrapData<{
+        totalEscalated: number;
+        escalationRate: number;
+        avgDaysBeforeEscalation: number;
+        byCategory: { category: string; count: number; percentage: number }[];
+      }>(
+        await request<
+          RawApiSuccess<{
+            totalEscalated: number;
+            escalationRate: number;
+            avgDaysBeforeEscalation: number;
+            byCategory: {
+              category: string;
+              count: number;
+              percentage: number;
+            }[];
+          }>
+        >("/analytics/escalations", { token, query: { locationId } })
+      )
+    : await (async () => {
+        const rows = await Promise.all(
+          childTownIds.map(async (townId) =>
+            unwrapData<{
+              totalEscalated: number;
+              escalationRate: number;
+              avgDaysBeforeEscalation: number;
+              byCategory: {
+                category: string;
+                count: number;
+                percentage: number;
+              }[];
+            }>(
+              await request<
+                RawApiSuccess<{
+                  totalEscalated: number;
+                  escalationRate: number;
+                  avgDaysBeforeEscalation: number;
+                  byCategory: {
+                    category: string;
+                    count: number;
+                    percentage: number;
+                  }[];
+                }>
+              >("/analytics/escalations", {
+                token,
+                query: { locationId: townId },
+              })
+            )
+          )
+        );
+
+        const grouped = rows
+          .flatMap((row) => row.byCategory ?? [])
+          .reduce<Record<string, number>>((acc, row) => {
+            acc[row.category] = (acc[row.category] ?? 0) + row.count;
+            return acc;
+          }, {});
+        const totalEscalated = rows.reduce(
+          (sum, row) => sum + (row.totalEscalated ?? 0),
+          0
+        );
+        const byCategory = Object.entries(grouped).map(([category, count]) => ({
+          category,
+          count,
+          percentage: totalEscalated > 0 ? (count / totalEscalated) * 100 : 0,
+        }));
+        return {
+          totalEscalated,
+          escalationRate:
+            rows.reduce((sum, row) => sum + (row.escalationRate ?? 0), 0) /
+            (rows.length || 1),
+          avgDaysBeforeEscalation:
+            rows.reduce(
+              (sum, row) =>
+                sum +
+                (row.avgDaysBeforeEscalation ?? 0) *
+                  (row.totalEscalated ?? 1),
+              0
+            ) / (totalEscalated || rows.length || 1),
+          byCategory,
+        };
+      })();
+
   return {
     ...data,
     byCategory: (data.byCategory ?? []).map((row) => ({ ...row, category: toDisplayLabel(row.category) })),

@@ -44,6 +44,7 @@ export default function DashboardClient() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [newCaseModal, setNewCaseModal] = useState(false);
   const [adminDistrict, setAdminDistrict] = useState("");
+  const [adminTown, setAdminTown] = useState("");
   const [hasInitializedLocationFilter, setHasInitializedLocationFilter] =
     useState(false);
   const [locationOptions, setLocationOptions] = useState<
@@ -73,6 +74,22 @@ export default function DashboardClient() {
   const [newDepartmentScope, setNewDepartmentScope] = useState<
     "DISTRICT" | "MUNICIPAL" | ""
   >("");
+  const districtFilterOptions = locationOptions
+    .filter((location) => location.type === "METRO_DISTRICT")
+    .map((location) => ({
+      value: location.value,
+      label: location.label,
+    }));
+  const townFilterOptions = locationOptions
+    .filter(
+      (location) =>
+        location.type === "TOWN" &&
+        location.parentLocationId === adminDistrict
+    )
+    .map((location) => ({
+      value: location.value,
+      label: location.label,
+    }));
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
@@ -98,8 +115,19 @@ export default function DashboardClient() {
       }));
       setLocationOptions(options);
       setLocationError(null);
+      const districtOptions = options.filter(
+        (location) => location.type === "METRO_DISTRICT"
+      );
       if (!hasInitializedLocationFilter) {
-        setAdminDistrict("");
+        const preferredDistrictId =
+          districtOptions.find(
+            (location) =>
+              location.label.trim().toLowerCase() === "sekyerekumawu"
+          )?.value ??
+          districtOptions[0]?.value ??
+          "";
+        setAdminDistrict(isSuperAdmin ? preferredDistrictId : "");
+        setAdminTown("");
         setHasInitializedLocationFilter(true);
       }
     } catch (error) {
@@ -109,7 +137,7 @@ export default function DashboardClient() {
     } finally {
       setLocationsLoading(false);
     }
-  }, [hasInitializedLocationFilter]);
+  }, [hasInitializedLocationFilter, isSuperAdmin]);
 
   const loadDepartments = useCallback(async () => {
     if (!token || !isSuperAdmin) return;
@@ -138,10 +166,15 @@ export default function DashboardClient() {
     fetchNavigators,
   } = useMonitoring({ token, currentUser });
 
+  const monitoringLocationFilter = isSuperAdmin
+    ? adminTown || adminDistrict
+    : adminDistrict;
+
   const refreshStatsForAdmin = useCallback(() => {
     if (!token || !isAdmin) return;
-    refreshStats(adminDistrict);
-  }, [token, isAdmin, refreshStats, adminDistrict]);
+    refreshStats(monitoringLocationFilter);
+  }, [token, isAdmin, refreshStats, monitoringLocationFilter]);
+  const casesLocationFilter = isSuperAdmin ? adminTown || adminDistrict : undefined;
 
   const {
     liveComplaints,
@@ -181,7 +214,7 @@ export default function DashboardClient() {
     token,
     currentUser,
     onStatsRefresh: refreshStatsForAdmin,
-    adminDistrict: isAdmin ? adminDistrict : undefined,
+    adminDistrict: isAdmin ? casesLocationFilter : undefined,
   });
 
   const handleCreateLocation = useCallback(async () => {
@@ -350,13 +383,13 @@ export default function DashboardClient() {
     loadLocations();
     if (currentUser?.role === "district_officer") {
       refreshComplaints(undefined, 1, 200);
-    } else {
+    } else if (!isSuperAdmin || adminDistrict) {
       refreshComplaints();
     }
-    if (isAdmin) {
+    if (isAdmin && (!isSuperAdmin || adminDistrict)) {
       refreshStatsForAdmin();
-      refreshNavigatorUpdates(adminDistrict);
-      refreshOverdueComplaints();
+      refreshNavigatorUpdates(monitoringLocationFilter);
+      refreshOverdueComplaints(monitoringLocationFilter);
       fetchNavigators();
       fetchDistrictOfficers();
       fetchAdmins();
@@ -376,6 +409,7 @@ export default function DashboardClient() {
     fetchAdmins,
     refreshStatsForAdmin,
     adminDistrict,
+    monitoringLocationFilter,
     isAdmin,
     isSuperAdmin,
     loadDepartments,
@@ -434,19 +468,26 @@ export default function DashboardClient() {
 
   // Refresh monitoring data when tab changes to monitoring
   useEffect(() => {
-    if (activeTab === "monitoring" && token && isAdmin) {
+    if (
+      activeTab === "monitoring" &&
+      token &&
+      isAdmin &&
+      (!isSuperAdmin || adminDistrict)
+    ) {
       refreshStatsForAdmin();
-      refreshNavigatorUpdates(adminDistrict);
-      refreshOverdueComplaints();
+      refreshNavigatorUpdates(monitoringLocationFilter);
+      refreshOverdueComplaints(monitoringLocationFilter);
     }
   }, [
     activeTab,
     token,
     isAdmin,
+    isSuperAdmin,
     refreshStatsForAdmin,
     refreshNavigatorUpdates,
     refreshOverdueComplaints,
     adminDistrict,
+    monitoringLocationFilter,
   ]);
 
   // Handle closing case details modal - also close assignment/escalation modals
@@ -459,10 +500,14 @@ export default function DashboardClient() {
   const handleAdminDistrictChange = useCallback(
     (district: string) => {
       setAdminDistrict(district);
+      if (isSuperAdmin) {
+        setAdminTown("");
+      }
       handleCloseCaseDetailsModal();
       if (isAdmin) {
         refreshStats(district);
         refreshNavigatorUpdates(district);
+        refreshOverdueComplaints(district);
         // Reset to page 1 when changing district
         refreshComplaints(district, 1, complaintsPageSize);
       }
@@ -470,8 +515,33 @@ export default function DashboardClient() {
     [
       handleCloseCaseDetailsModal,
       isAdmin,
+      isSuperAdmin,
       refreshStats,
       refreshNavigatorUpdates,
+      refreshOverdueComplaints,
+      refreshComplaints,
+      complaintsPageSize,
+    ]
+  );
+
+  const handleAdminTownChange = useCallback(
+    (town: string) => {
+      setAdminTown(town);
+      handleCloseCaseDetailsModal();
+      if (isAdmin) {
+        refreshStats(town || adminDistrict);
+        refreshNavigatorUpdates(town || adminDistrict);
+        refreshOverdueComplaints(town || adminDistrict);
+      }
+      refreshComplaints(town || adminDistrict, 1, complaintsPageSize);
+    },
+    [
+      adminDistrict,
+      handleCloseCaseDetailsModal,
+      isAdmin,
+      refreshStats,
+      refreshNavigatorUpdates,
+      refreshOverdueComplaints,
       refreshComplaints,
       complaintsPageSize,
     ]
@@ -512,12 +582,12 @@ export default function DashboardClient() {
   const handlePageChange = useCallback(
     (newPage: number) => {
       setComplaintsPage(newPage);
-      const district = isAdmin ? adminDistrict : undefined;
-      refreshComplaints(district, newPage, complaintsPageSize);
+      const locationFilter = isAdmin ? casesLocationFilter : undefined;
+      refreshComplaints(locationFilter, newPage, complaintsPageSize);
     },
     [
       isAdmin,
-      adminDistrict,
+      casesLocationFilter,
       complaintsPageSize,
       refreshComplaints,
       setComplaintsPage,
@@ -527,11 +597,11 @@ export default function DashboardClient() {
   const handlePageSizeChange = useCallback(
     (newPageSize: number) => {
       setComplaintsPageSize(newPageSize);
-      const district = isAdmin ? adminDistrict : undefined;
+      const locationFilter = isAdmin ? casesLocationFilter : undefined;
       // Reset to page 1 when changing page size
-      refreshComplaints(district, 1, newPageSize);
+      refreshComplaints(locationFilter, 1, newPageSize);
     },
-    [isAdmin, adminDistrict, refreshComplaints, setComplaintsPageSize]
+    [isAdmin, casesLocationFilter, refreshComplaints, setComplaintsPageSize]
   );
 
   const renderTabContent = () => {
@@ -541,6 +611,7 @@ export default function DashboardClient() {
         return (
           <CasesTab
             isAdmin={isAdmin}
+            showTownFilter={isSuperAdmin}
             isDistrictOfficer={isDistrictOfficer}
             escalatedToMe={escalatedToMe}
             filteredComplaints={filteredComplaints}
@@ -550,9 +621,9 @@ export default function DashboardClient() {
             statusUpdatingId={statusUpdatingId}
             onSelect={handleCaseSelect}
             onUpdateStatus={handleUpdateStatus}
-            adminDistrict={adminDistrict}
-            onAdminDistrictChange={handleAdminDistrictChange}
-            locationOptions={locationOptions}
+            adminTown={adminTown}
+            onAdminTownChange={handleAdminTownChange}
+            townOptions={townFilterOptions}
             complaintsPage={complaintsPage}
             complaintsPageSize={complaintsPageSize}
             complaintsTotal={complaintsTotal}
@@ -601,10 +672,11 @@ export default function DashboardClient() {
             monitoringMetrics={monitoringMetrics}
             overdueComplaints={overdueComplaints}
             navigatorUpdates={navigatorUpdates}
-            isAdmin={isAdmin}
             adminDistrict={adminDistrict}
-            onAdminDistrictChange={handleAdminDistrictChange}
-            locationOptions={locationOptions}
+            showTownFilter={isSuperAdmin}
+            adminTown={adminTown}
+            onAdminTownChange={handleAdminTownChange}
+            townOptions={townFilterOptions}
           />
         );
 
@@ -642,6 +714,9 @@ export default function DashboardClient() {
         isSuperAdmin={isSuperAdmin}
         isNavigator={isNavigator}
         isDistrictOfficer={isDistrictOfficer}
+        districtOptions={districtFilterOptions}
+        selectedDistrict={adminDistrict}
+        onDistrictChange={handleAdminDistrictChange}
         onNewCase={() => setNewCaseModal(true)}
         profileMenuOpen={profileMenuOpen}
         setProfileMenuOpen={setProfileMenuOpen}

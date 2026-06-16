@@ -544,6 +544,22 @@ export function mapLocation(raw: RawLocation): ApiLocation {
   };
 }
 
+export function getLocationById(locationId?: string | null): RawLocation | null {
+  if (!locationId) return null;
+  return locationCache.byId.get(locationId) ?? null;
+}
+
+export function getChildTownIds(parentLocationId?: string | null): string[] {
+  if (!parentLocationId) return [];
+  return Array.from(locationCache.byId.values())
+    .filter(
+      (location) =>
+        location.type === "TOWN" &&
+        location.parentLocationId === parentLocationId
+    )
+    .map((location) => location.id);
+}
+
 export function mapDepartment(raw: RawDepartment): ApiDepartment {
   return {
     id: raw.id,

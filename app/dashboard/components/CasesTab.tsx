@@ -12,6 +12,7 @@ interface LocationOption {
 
 interface CasesTabProps {
   isAdmin: boolean;
+  showTownFilter?: boolean;
   isDistrictOfficer: boolean;
   escalatedToMe: ApiComplaint[];
   filteredComplaints: ApiComplaint[];
@@ -24,9 +25,9 @@ interface CasesTabProps {
     complaintId: string,
     newStatus: ApiComplaint["status"]
   ) => void;
-  adminDistrict?: string;
-  onAdminDistrictChange?: (district: string) => void;
-  locationOptions?: LocationOption[];
+  adminTown?: string;
+  onAdminTownChange?: (town: string) => void;
+  townOptions?: LocationOption[];
   // Server-side pagination props
   complaintsPage: number;
   complaintsPageSize: number;
@@ -38,6 +39,7 @@ interface CasesTabProps {
 
 export function CasesTab({
   isAdmin,
+  showTownFilter = false,
   isDistrictOfficer,
   escalatedToMe,
   filteredComplaints,
@@ -47,9 +49,9 @@ export function CasesTab({
   statusUpdatingId,
   onSelect,
   onUpdateStatus,
-  adminDistrict,
-  onAdminDistrictChange,
-  locationOptions = [],
+  adminTown,
+  onAdminTownChange,
+  townOptions = [],
   complaintsPage,
   complaintsPageSize,
   complaintsTotal,
@@ -103,16 +105,17 @@ export function CasesTab({
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {isAdmin && (
+          {isAdmin && showTownFilter && (
             <label className="block">
-              <span className="sr-only">Location</span>
+              <span className="sr-only">Town</span>
               <select
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-                value={adminDistrict || ""}
-                onChange={(e) => onAdminDistrictChange?.(e.target.value)}
+                value={adminTown || ""}
+                onChange={(e) => onAdminTownChange?.(e.target.value)}
+                disabled={!townOptions.length}
               >
-                <option value="">All Locations</option>
-                {locationOptions.map((opt) => (
+                <option value="">All Towns</option>
+                {townOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
