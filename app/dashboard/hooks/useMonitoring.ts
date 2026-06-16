@@ -32,6 +32,13 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
 
   const cacheScope = currentUser?.id ?? "anonymous";
 
+  const formatMetricNumber = (value?: number, decimals = 2) => {
+    const numeric = value ?? 0;
+    return Number.isInteger(numeric)
+      ? String(numeric)
+      : numeric.toFixed(decimals);
+  };
+
   const monitoringMetrics = useMemo(
     () => [
       {
@@ -45,18 +52,26 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
       },
       {
         label: "Avg Response",
-        value: `${monitoringStats?.avgResponseHours ?? 0}h`,
+        value: `${formatMetricNumber(monitoringStats?.avgResponseHours)}h`,
         change: monitoringStats?.avgResponseHoursChange
-          ? (monitoringStats.avgResponseHoursChange > 0 ? `+${monitoringStats.avgResponseHoursChange}h` : `${monitoringStats.avgResponseHoursChange}h`)
+          ? (
+              monitoringStats.avgResponseHoursChange > 0
+                ? `+${formatMetricNumber(monitoringStats.avgResponseHoursChange)}h`
+                : `${formatMetricNumber(monitoringStats.avgResponseHoursChange)}h`
+            )
           : "0h",
         trend: (monitoringStats?.avgResponseHoursChange ?? 0) < 0 ? ("up" as const) : ("down" as const),
         color: "green" as const,
       },
       {
         label: "Resolution Rate",
-        value: `${monitoringStats?.resolutionRate ?? 0}%`,
+        value: `${formatMetricNumber(monitoringStats?.resolutionRate)}%`,
         change: monitoringStats?.resolutionRateChange
-          ? (monitoringStats.resolutionRateChange > 0 ? `+${monitoringStats.resolutionRateChange}%` : `${monitoringStats.resolutionRateChange}%`)
+          ? (
+              monitoringStats.resolutionRateChange > 0
+                ? `+${formatMetricNumber(monitoringStats.resolutionRateChange)}%`
+                : `${formatMetricNumber(monitoringStats.resolutionRateChange)}%`
+            )
           : "0%",
         trend: (monitoringStats?.resolutionRateChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "purple" as const,

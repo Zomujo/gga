@@ -78,11 +78,11 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
   });
   const formatPercent = (value?: number) => {
     if (typeof value !== "number" || Number.isNaN(value)) return "0%";
-    return `${Math.round(value * 10) / 10}%`;
+    return `${value.toFixed(2)}%`;
   };
   const formatDays = (value?: number) => {
-    if (typeof value !== "number" || Number.isNaN(value)) return "0.0";
-    return (Math.round(value * 10) / 10).toFixed(1);
+    if (typeof value !== "number" || Number.isNaN(value)) return "0.00";
+    return value.toFixed(2);
   };
 
   useEffect(() => {
@@ -503,7 +503,7 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
                   padding: "12px 16px",
                 }}
                 cursor={{ fill: 'rgba(249, 115, 22, 0.05)' }}
-                formatter={(value: any) => [`${value} days`, 'Avg Time']}
+                formatter={(value?: number) => [`${formatDays(value)} days`, 'Avg Time']}
               />
               <Bar 
                 dataKey="avgDays" 

@@ -92,6 +92,14 @@ export default function DashboardClient() {
       value: location.value,
       label: location.label,
     }));
+  const scopedLocationOptions =
+    isSuperAdmin || !adminDistrict
+      ? locationOptions
+      : locationOptions.filter(
+          (location) =>
+            location.value === adminDistrict ||
+            location.parentLocationId === adminDistrict
+        );
 
   const getTabFromPath = useCallback((path: string, admin: boolean) => {
     if (!admin) {
@@ -723,7 +731,7 @@ export default function DashboardClient() {
       case "locations":
         return isAdmin ? (
           <LocationsTab
-            locationOptions={locationOptions}
+            locationOptions={scopedLocationOptions}
             locationsLoading={locationsLoading}
             creatingLocation={creatingLocation}
             newLocationName={newLocationName}

@@ -31,11 +31,11 @@ function pct(part: number, total: number) {
 }
 
 function formatHours(value: number) {
-  return `${value.toFixed(1)}h`;
+  return `${value.toFixed(2)}h`;
 }
 
 function formatDays(value: number) {
-  return `${value.toFixed(1)}d`;
+  return `${value.toFixed(2)}d`;
 }
 
 const CHART_COLORS = ["#059669", "#0ea5e9", "#f59e0b", "#8b5cf6", "#ef4444", "#6b7280"];
@@ -91,7 +91,7 @@ export function StaffDashboardTab({ complaints, currentUser }: StaffDashboardTab
       },
       {
         label: "Resolution Rate",
-        value: `${resolutionRate.toFixed(1)}%`,
+        value: `${resolutionRate.toFixed(2)}%`,
         change: `${resolved.length}/${myCases.length || 0} resolved`,
         trend: "up" as const,
         color: "purple" as MetricColor,
