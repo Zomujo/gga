@@ -66,7 +66,7 @@ export function DepartmentsTab({
           placeholder="e.g., Central Administration"
           value={newDepartmentName}
           onChange={(e) => onNewDepartmentNameChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
         />
       </label>
 
@@ -81,7 +81,7 @@ export function DepartmentsTab({
               e.target.value as "DISTRICT" | "MUNICIPAL" | ""
             )
           }
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
         >
           <option value="">No scope</option>
           <option value="DISTRICT">District</option>
@@ -93,7 +93,7 @@ export function DepartmentsTab({
         type="button"
         onClick={handleCreateAndClose}
         disabled={!canCreateDepartment}
-        className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {creatingDepartment ? "Creating department..." : "Create department"}
       </button>
@@ -110,7 +110,7 @@ export function DepartmentsTab({
         <button
           type="button"
           onClick={() => setCreateModalOpen(true)}
-          className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 lg:hidden"
+          className="mt-4 w-full rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] lg:hidden"
         >
           + Create department
         </button>
@@ -128,7 +128,7 @@ export function DepartmentsTab({
           <div className="mt-4 max-h-[32rem] space-y-3 overflow-auto pr-1">
             {departmentsLoading ? (
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#7a5a3b]" />
                 <span>Loading departments...</span>
               </div>
             ) : departments.length === 0 ? (
@@ -153,7 +153,7 @@ export function DepartmentsTab({
                         <span
                           className={`rounded-full px-2 py-1 ${
                             department.isActive
-                              ? "bg-emerald-100 text-emerald-700"
+                              ? "bg-[#f4efe5] text-[#7a5a3b]"
                               : "bg-gray-200 text-gray-700"
                           }`}
                         >
@@ -268,7 +268,7 @@ export function DepartmentsTab({
                       prev ? { ...prev, name: e.target.value } : prev
                     )
                   }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                 />
               </label>
 
@@ -291,7 +291,7 @@ export function DepartmentsTab({
                         : prev
                     )
                   }
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                 >
                   <option value="">No scope</option>
                   <option value="DISTRICT">District</option>
@@ -308,7 +308,7 @@ export function DepartmentsTab({
                       prev ? { ...prev, isActive: e.target.checked } : prev
                     )
                   }
-                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-gray-300 text-[#7a5a3b] focus:ring-[#7a5a3b]"
                 />
                 <span>Department is active</span>
               </label>
@@ -332,7 +332,7 @@ export function DepartmentsTab({
                     });
                     setEditingDepartment(null);
                   }}
-                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {updatingDepartmentId === editingDepartment.id
                     ? "Saving..."

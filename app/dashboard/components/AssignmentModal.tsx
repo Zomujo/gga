@@ -47,7 +47,7 @@ export function AssignmentModal({
               Assign to Staff Officer
             </label>
             <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
               value={assignee}
               onChange={(e) => {
                 onClearError();
@@ -80,7 +80,7 @@ export function AssignmentModal({
             <p className="mb-2 text-xs text-gray-500">Required</p>
             <input
               type="datetime-local"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
               value={expectedResolutionDate}
               onChange={(e) => {
                 onClearError();
@@ -99,7 +99,7 @@ export function AssignmentModal({
             </button>
             <button
               disabled={assigning}
-              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="flex-1 rounded-lg bg-[#7a5a3b] px-3 py-2 text-sm font-semibold text-white hover:bg-[#62482f] disabled:cursor-not-allowed disabled:bg-gray-400"
               onClick={onAssign}
             >
               {assigning ? "Assigning..." : "Assign"}

@@ -161,7 +161,7 @@ export function CasesTable({
               <select
                 value={pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-[#7a5a3b] focus:outline-none"
               >
                 {PAGE_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>

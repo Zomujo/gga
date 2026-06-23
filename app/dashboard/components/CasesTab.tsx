@@ -109,7 +109,7 @@ export function CasesTab({
             <label className="block">
               <span className="sr-only">Town</span>
               <select
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                 value={adminTown || ""}
                 onChange={(e) => onAdminTownChange?.(e.target.value)}
                 disabled={!townOptions.length}
@@ -125,7 +125,7 @@ export function CasesTab({
           )}
           <button
             type="button"
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-left text-gray-900 focus:border-emerald-500 focus:outline-none sm:hidden"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-left text-gray-900 focus:border-[#7a5a3b] focus:outline-none sm:hidden"
             onClick={() => setStatusFilterModalOpen(true)}
           >
             <span className="flex items-center justify-between gap-3">
@@ -136,7 +136,7 @@ export function CasesTab({
           <label className="hidden sm:block">
             <span className="sr-only">Status</span>
             <select
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-[#7a5a3b] focus:outline-none"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -194,9 +194,9 @@ export function CasesTab({
                 <button
                   key={option}
                   type="button"
-                  className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                  className={`block w-full px-3 py-3 text-left text-sm hover:bg-[#f4efe5] ${
                     option === statusFilter
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-[#f4efe5] text-[#7a5a3b]"
                       : "text-gray-700"
                   }`}
                   onClick={() => {

@@ -159,7 +159,7 @@ export function CaseDetailsModal({
       ?.label ?? "Pending";
 
   const pickerButtonClassName =
-    "flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none";
+    "flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm focus:border-[#7a5a3b] focus:outline-none";
 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
@@ -526,7 +526,7 @@ export function CaseDetailsModal({
                       <span
                         className={`mt-1 h-3 w-3 rounded-full ${
                           item.tone === "success"
-                            ? "bg-emerald-600"
+                            ? "bg-[#7a5a3b]"
                             : item.tone === "danger"
                             ? "bg-red-500"
                             : "bg-blue-500"
@@ -554,7 +554,7 @@ export function CaseDetailsModal({
             {isAdmin && (
               <div className="flex gap-2">
                 <button
-                  className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  className="flex-1 rounded-lg bg-[#7a5a3b] px-3 py-2 text-sm font-semibold text-white hover:bg-[#62482f]"
                   onClick={onOpenAssignmentModal}
                 >
                   Assign
@@ -661,9 +661,9 @@ export function CaseDetailsModal({
                         <button
                           key={officer.id}
                           type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                          className={`block w-full px-3 py-2 text-left text-sm hover:bg-[#f4efe5] ${
                             officer.id === assignee
-                              ? "bg-emerald-50 text-emerald-700"
+                              ? "bg-[#f4efe5] text-[#7a5a3b]"
                               : "text-gray-700"
                           }`}
                           onClick={() => {
@@ -700,7 +700,7 @@ export function CaseDetailsModal({
                   <p className="mb-2 text-xs text-gray-500">Required</p>
                   <input
                     type="datetime-local"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                     value={expectedResolutionDate}
                     onChange={(e) => {
                       onClearAssignmentError();
@@ -719,7 +719,7 @@ export function CaseDetailsModal({
                   </button>
                   <button
                     disabled={assigning}
-                    className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    className="flex-1 rounded-lg bg-[#7a5a3b] px-3 py-2 text-sm font-semibold text-white hover:bg-[#62482f] disabled:cursor-not-allowed disabled:bg-gray-400"
                     onClick={onAssign}
                   >
                     {assigning ? "Assigning..." : "Assign"}
@@ -781,9 +781,9 @@ export function CaseDetailsModal({
                         <button
                           key={admin.id}
                           type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 ${
+                          className={`block w-full px-3 py-2 text-left text-sm hover:bg-[#f4efe5] ${
                             admin.id === targetAdmin
-                              ? "bg-emerald-50 text-emerald-700"
+                              ? "bg-[#f4efe5] text-[#7a5a3b]"
                               : "text-gray-700"
                           }`}
                           onClick={() => {
@@ -812,7 +812,7 @@ export function CaseDetailsModal({
                     <button
                       type="button"
                       onClick={onRefreshAdmins}
-                      className="text-xs text-emerald-600 hover:underline"
+                      className="text-xs text-[#7a5a3b] hover:underline"
                     >
                       Refresh list
                     </button>
@@ -823,7 +823,7 @@ export function CaseDetailsModal({
                     Escalation Reason
                   </label>
                   <textarea
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                     rows={4}
                     value={escalationReason}
                     onChange={(e) => {
@@ -887,9 +887,9 @@ export function CaseDetailsModal({
                   <button
                     key={option.value}
                     type="button"
-                    className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                    className={`block w-full px-3 py-3 text-left text-sm hover:bg-[#f4efe5] ${
                       option.value === activeComplaint.status
-                        ? "bg-emerald-50 text-emerald-700"
+                        ? "bg-[#f4efe5] text-[#7a5a3b]"
                         : "text-gray-700"
                     }`}
                     onClick={() => {

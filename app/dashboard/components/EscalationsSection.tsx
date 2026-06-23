@@ -130,9 +130,9 @@ export function EscalationsSection({
                 <button
                   key={option.value}
                   type="button"
-                  className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                  className={`block w-full px-3 py-3 text-left text-sm hover:bg-[#f4efe5] ${
                     option.value === activeStatusComplaint.status
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-[#f4efe5] text-[#7a5a3b]"
                       : "text-gray-700"
                   }`}
                   onClick={() => {

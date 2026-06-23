@@ -80,7 +80,7 @@ export function NewCaseModal({
                 type="tel"
                 required
                 placeholder="+233551234567"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                 value={complaintForm.phoneNumber ?? ""}
                 onChange={(e) =>
                   setComplaintForm((prev) => ({
@@ -102,7 +102,7 @@ export function NewCaseModal({
                       isAnonymous: e.target.checked,
                     }))
                   }
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#7a5a3b] focus:ring-[#7a5a3b]"
                 />
                 <div>
                   <p className="text-sm font-medium text-gray-900">
@@ -128,7 +128,7 @@ export function NewCaseModal({
                 </span>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 sm:hidden"
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-[#7a5a3b] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 sm:hidden"
                   onClick={() => {
                     if (!isLocationLocked) setPickerOpen("location");
                   }}
@@ -141,7 +141,7 @@ export function NewCaseModal({
                 </button>
                 <select
                   required
-                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500 sm:block"
+                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none disabled:bg-gray-50 disabled:text-gray-500 sm:block"
                   value={complaintForm.district ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -174,7 +174,7 @@ export function NewCaseModal({
                 </span>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-emerald-500 focus:outline-none sm:hidden"
+                  className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-[#7a5a3b] focus:outline-none sm:hidden"
                   onClick={() => setPickerOpen("category")}
                 >
                   <span className="truncate">{selectedCategoryLabel}</span>
@@ -182,7 +182,7 @@ export function NewCaseModal({
                 </button>
                 <select
                   required
-                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none sm:block"
+                  className="hidden w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none sm:block"
                   value={complaintForm.category ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -210,7 +210,7 @@ export function NewCaseModal({
                   type="text"
                   required
                   placeholder="Please specify the category"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                   value={complaintForm.otherCategory ?? ""}
                   onChange={(e) =>
                     setComplaintForm((prev) => ({
@@ -227,7 +227,7 @@ export function NewCaseModal({
                 Description
               </span>
               <textarea
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
                 rows={3}
                 value={complaintForm.description ?? ""}
                 onChange={(e) =>
@@ -241,7 +241,7 @@ export function NewCaseModal({
           </div>
 
           {complaintStatus && (
-            <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+            <p className="rounded-lg border border-[#d7c8ab] bg-[#f4efe5] p-3 text-sm text-[#7a5a3b]">
               {complaintStatus}
             </p>
           )}
@@ -261,7 +261,7 @@ export function NewCaseModal({
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:bg-blue-300"
+              className="flex-1 rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] disabled:bg-gray-400"
               disabled={complaintSubmitting}
             >
               {complaintSubmitting ? "Submitting..." : "Submit Report"}
@@ -303,9 +303,9 @@ export function NewCaseModal({
                       <button
                         key={opt.value}
                         type="button"
-                        className={`block w-full px-3 py-3 text-left text-sm hover:bg-emerald-50 ${
+                        className={`block w-full px-3 py-3 text-left text-sm hover:bg-[#f4efe5] ${
                           isActive
-                            ? "bg-emerald-50 text-emerald-700"
+                            ? "bg-[#f4efe5] text-[#7a5a3b]"
                             : "text-gray-700"
                         }`}
                         onClick={() => {

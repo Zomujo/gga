@@ -48,7 +48,7 @@ export function EscalationModal({
               Escalate to Admin
             </label>
             <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
               value={targetAdmin}
               onChange={(e) => {
                 onClearError();
@@ -72,7 +72,7 @@ export function EscalationModal({
               <button
                 type="button"
                 onClick={() => onRefreshAdmins?.()}
-                className="text-xs text-emerald-600 hover:underline"
+                className="text-xs text-[#7a5a3b] hover:underline"
               >
                 Refresh list
               </button>
@@ -83,7 +83,7 @@ export function EscalationModal({
               Escalation Reason
             </label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
               rows={4}
               value={escalationReason}
               onChange={(e) => {
