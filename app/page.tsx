@@ -13,28 +13,29 @@ import {
 import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
 
 const highlights = [
-  "Community-led reporting with clear case ownership",
-  "Assembly portal for structured case management",
-  "Real-time tracking and accountability measures",
+  "Community reporting tied directly to Sekyere Kumawu District Assembly",
+  "Clear case ownership across towns and communities",
+  "Visible follow-through on local service delivery issues",
 ];
 
 const quickSteps = [
   {
     title: "1. Create an account",
-    copy: "Sign up as a field agent to join the community reporting network.",
+    copy: "Register as a field agent for Sekyere Kumawu District Assembly.",
   },
   {
     title: "2. Submit reports",
-    copy: "Use the dashboard to log service delivery issues from your community.",
+    copy: "Log issues from your town or community through the district reporting dashboard.",
   },
   {
     title: "3. Track and resolve",
-    copy: "Follow case progress and help drive documented outcomes.",
+    copy: "Follow case progress from reporting through assignment and resolution.",
   },
 ];
 
 const FIELD_OFFICER_DEFAULT_DEPARTMENT_ID =
   "860441fe-cfb6-4c52-90af-6eb29e1e06ba";
+const SKDA_DISTRICT_NAME = "Sekyere Kumawu";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -101,8 +102,15 @@ export default function LandingPage() {
         const metroDistricts = rows.filter(
           (location) => location.type === "METRO_DISTRICT"
         );
+        const skdaDistrict =
+          metroDistricts.find((location) => location.name === SKDA_DISTRICT_NAME) ??
+          null;
         const defaultMetroDistrictId =
-          metroDistricts[0]?.id ?? rows[0]?.parentLocationId ?? rows[0]?.id ?? "";
+          skdaDistrict?.id ??
+          metroDistricts[0]?.id ??
+          rows[0]?.parentLocationId ??
+          rows[0]?.id ??
+          "";
         const defaultTownId =
           rows.find(
             (location) =>
@@ -116,8 +124,13 @@ export default function LandingPage() {
           metroDistrict: prev.metroDistrict || defaultMetroDistrictId,
           district: prev.district || defaultTownId,
         }));
+        const districtTownCount = rows.filter(
+          (location) =>
+            location.type === "TOWN" &&
+            location.parentLocationId === defaultMetroDistrictId
+        ).length;
         setLandingStats({
-          assemblies: rows.length,
+          assemblies: districtTownCount,
           activeCases: (publicStats.inProgress ?? 0) + (publicStats.pending ?? 0),
           citizensServed: publicStats.totalCases ?? 0,
         });
@@ -189,7 +202,7 @@ export default function LandingPage() {
 
   const stats = [
     {
-      label: "Assemblies",
+      label: "Towns / Communities",
       value: animatedStats.assemblies.toLocaleString(),
     },
     {
@@ -197,14 +210,21 @@ export default function LandingPage() {
       value: animatedStats.activeCases.toLocaleString(),
     },
     {
-      label: "Citizens Served",
+      label: "Reports Logged",
       value: animatedStats.citizensServed.toLocaleString(),
     },
   ];
 
-  const metroDistrictOptions = locationOptions.filter(
+  const allMetroDistrictOptions = locationOptions.filter(
     (location) => location.type === "METRO_DISTRICT"
   );
+  const skdaDistrict =
+    allMetroDistrictOptions.find(
+      (location) => location.name === SKDA_DISTRICT_NAME
+    ) ?? null;
+  const metroDistrictOptions = skdaDistrict
+    ? [skdaDistrict]
+    : allMetroDistrictOptions;
   const townOptions = locationOptions.filter(
     (location) =>
       location.type === "TOWN" &&
@@ -268,7 +288,9 @@ export default function LandingPage() {
   if (checkingSession) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-sm text-gray-600">Loading GGA Governance…</p>
+        <p className="text-sm text-gray-600">
+          Loading Sekyere Kumawu District Assembly…
+        </p>
       </div>
     );
   }
@@ -281,8 +303,8 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-auto items-center justify-center overflow-hidden sm:h-12">
                 <img
-                  src={encodeURI("/GGA-logo-Full-Colour-Pantone.png")}
-                  alt="Good Governance Africa"
+                  src={encodeURI("/skda-logo.jpeg")}
+                  alt="Sekyere Kumawu District Assembly"
                   className="h-full w-auto object-contain"
                 />
               </div>
@@ -291,26 +313,26 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:py-20">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
-          <section className="order-1 space-y-8 lg:space-y-10">
-            <div className="space-y-5 sm:space-y-6">
-              <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-7xl">
-                Connect citizens to{" "}
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14">
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.95fr] lg:gap-14">
+          <section className="order-1 space-y-8 lg:space-y-8">
+            <div className="space-y-4 sm:space-y-5">
+              <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-6xl">
+                Report community issues to{" "}
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  responsive
+                  Sekyere Kumawu
                 </span>{" "}
-                local assemblies.
+                District Assembly.
               </h2>
-              <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-xl">
-                GGA Governance equips community stewards to log local issues,
-                route them into structured assembly response, and keep outcomes
-                visible.
+              <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-lg">
+                This portal helps field agents across Sekyere Kumawu log local
+                concerns, route them into the district response process, and
+                keep progress visible from report to resolution.
               </p>
             </div>
 
-            <div className="hidden lg:block lg:space-y-10">
-              <ul className="space-y-4">
+            <div className="hidden lg:block lg:space-y-8">
+              <ul className="space-y-3">
                 {highlights.map((item, index) => (
                   <li key={item} className="group flex items-start gap-4">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
@@ -318,7 +340,7 @@ export default function LandingPage() {
                         {index + 1}
                       </span>
                     </div>
-                    <p className="pt-1 text-base font-medium text-gray-800 sm:text-lg">
+                    <p className="pt-1 text-base font-medium text-gray-800">
                       {item}
                     </p>
                   </li>
@@ -332,9 +354,9 @@ export default function LandingPage() {
                 {stats.map((stat) => (
                   <div
                     key={stat.label}
-                    className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl sm:p-6"
+                    className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl"
                   >
-                    <p className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    <p className="text-3xl font-extrabold text-gray-900">
                       {stat.value}
                     </p>
                     <p className="mt-2 text-sm font-medium uppercase tracking-wide text-gray-600">
@@ -348,7 +370,7 @@ export default function LandingPage() {
 
           <section
             id="auth-card"
-            className="order-2 rounded-3xl border border-white/50 bg-white/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:order-none lg:sticky lg:top-8"
+            className="order-2 rounded-3xl border border-white/50 bg-white/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:order-none lg:sticky lg:top-6"
           >
             <div className="mb-6 sm:mb-8">
               <div className="mb-5 flex items-center justify-between sm:mb-6">
@@ -421,7 +443,7 @@ export default function LandingPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-gray-700">
-                      Metro / District
+                      District
                     </label>
                     <select
                       required
@@ -474,13 +496,13 @@ export default function LandingPage() {
                       ))}
                     </select>
                     <p className="mt-2 text-xs text-gray-500">
-                      New public signups are created as Field Agents.
+                      All new signups are created as Field Agents for Sekyere Kumawu District Assembly.
                     </p>
                     {!locationsLoading &&
                       (metroDistrictOptions.length === 0 ||
                         townOptions.length === 0) && (
                       <p className="mt-2 text-xs text-amber-700">
-                        No metro/district and town locations are available yet. Ask an admin to configure them first.
+                        No district and town locations are available yet. Ask an admin to configure them first.
                       </p>
                     )}
                   </div>
@@ -607,12 +629,14 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-6">
             <div className="flex flex-wrap items-center justify-center gap-8">
               <img
-                src={encodeURI("/GGA-logo-Full-Colour-Pantone.png")}
-                alt="Good Governance Africa"
+                src={encodeURI("/skda-logo.jpeg")}
+                alt="Sekyere Kumawu District Assembly"
                 className="h-12 w-auto object-contain opacity-90"
               />
             </div>
-            <p className="text-xs text-gray-600">© 2026 Good Governance Africa</p>
+            <p className="text-xs text-gray-600">
+              © 2026 Sekyere Kumawu District Assembly
+            </p>
           </div>
         </div>
       </footer>

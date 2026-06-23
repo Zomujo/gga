@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GGA Governance | Local Service Delivery",
-  description: "Inclusive Governance and Service Delivery Platform",
+  title: "Sekyere Kumawu District Assembly | Service Delivery Portal",
+  description: "Community reporting and case management for Sekyere Kumawu District Assembly.",
   icons: {
-    icon: "/GGA-logo-Full-Colour-Pantone.png",
-    shortcut: "/GGA-logo-Full-Colour-Pantone.png",
-    apple: "/GGA-logo-Full-Colour-Pantone.png",
+    icon: "/skda-logo.jpeg",
+    shortcut: "/skda-logo.jpeg",
+    apple: "/skda-logo.jpeg",
   },
 };
 
