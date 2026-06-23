@@ -50,7 +50,7 @@ export function MonitoringTab({
           <label className="flex items-center gap-2 text-sm">
             <span className="font-medium text-gray-700">Town</span>
             <select
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="rounded-lg border border-[#cdbd9a] bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
               value={adminTown || ""}
               onChange={(e) => onAdminTownChange?.(e.target.value)}
               disabled={!townOptions.length}

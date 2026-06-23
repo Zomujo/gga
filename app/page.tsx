@@ -100,11 +100,12 @@ export default function LandingPage() {
         const rows = locationsResponse.rows ?? [];
         setLocationOptions(rows);
         const metroDistricts = rows.filter(
-          (location) => location.type === "METRO_DISTRICT"
+          (location) => location.type === "METRO_DISTRICT",
         );
         const skdaDistrict =
-          metroDistricts.find((location) => location.name === SKDA_DISTRICT_NAME) ??
-          null;
+          metroDistricts.find(
+            (location) => location.name === SKDA_DISTRICT_NAME,
+          ) ?? null;
         const defaultMetroDistrictId =
           skdaDistrict?.id ??
           metroDistricts[0]?.id ??
@@ -115,7 +116,7 @@ export default function LandingPage() {
           rows.find(
             (location) =>
               location.type === "TOWN" &&
-              location.parentLocationId === defaultMetroDistrictId
+              location.parentLocationId === defaultMetroDistrictId,
           )?.id ??
           rows.find((location) => location.type === "TOWN")?.id ??
           "";
@@ -127,11 +128,12 @@ export default function LandingPage() {
         const districtTownCount = rows.filter(
           (location) =>
             location.type === "TOWN" &&
-            location.parentLocationId === defaultMetroDistrictId
+            location.parentLocationId === defaultMetroDistrictId,
         ).length;
         setLandingStats({
           assemblies: districtTownCount,
-          activeCases: (publicStats.inProgress ?? 0) + (publicStats.pending ?? 0),
+          activeCases:
+            (publicStats.inProgress ?? 0) + (publicStats.pending ?? 0),
           citizensServed: publicStats.totalCases ?? 0,
         });
       } catch {
@@ -202,7 +204,7 @@ export default function LandingPage() {
 
   const stats = [
     {
-      label: "Towns / Communities",
+      label: "Towns",
       value: animatedStats.assemblies.toLocaleString(),
     },
     {
@@ -210,17 +212,17 @@ export default function LandingPage() {
       value: animatedStats.activeCases.toLocaleString(),
     },
     {
-      label: "Reports Logged",
+      label: "Reports",
       value: animatedStats.citizensServed.toLocaleString(),
     },
   ];
 
   const allMetroDistrictOptions = locationOptions.filter(
-    (location) => location.type === "METRO_DISTRICT"
+    (location) => location.type === "METRO_DISTRICT",
   );
   const skdaDistrict =
     allMetroDistrictOptions.find(
-      (location) => location.name === SKDA_DISTRICT_NAME
+      (location) => location.name === SKDA_DISTRICT_NAME,
     ) ?? null;
   const metroDistrictOptions = skdaDistrict
     ? [skdaDistrict]
@@ -228,7 +230,7 @@ export default function LandingPage() {
   const townOptions = locationOptions.filter(
     (location) =>
       location.type === "TOWN" &&
-      location.parentLocationId === form.metroDistrict
+      location.parentLocationId === form.metroDistrict,
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -246,7 +248,7 @@ export default function LandingPage() {
         !isValidGhanaPhoneInput(form.phoneNumber)
       ) {
         throw new Error(
-          "Enter a valid Ghana phone number, for example 0201234567."
+          "Enter a valid Ghana phone number, for example 0201234567.",
         );
       }
 
@@ -278,7 +280,7 @@ export default function LandingPage() {
       }
     } catch (error) {
       setAuthError(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     } finally {
       setAuthLoading(false);
@@ -296,8 +298,8 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
-      <header className="border-b border-white/20 bg-white/40 backdrop-blur-md">
+    <div className="min-h-screen bg-[#f2eee5]">
+      <header className="border-b border-[#d7c8ab]/60 bg-[#f8f5ee]/75 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
@@ -319,10 +321,8 @@ export default function LandingPage() {
             <div className="space-y-4 sm:space-y-5">
               <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-6xl">
                 Report community issues to{" "}
-                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  Sekyere Kumawu
-                </span>{" "}
-                District Assembly.
+                <span className="text-[#7a5a3b]">Sekyere Kumawu</span> District
+                Assembly.
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-lg">
                 This portal helps field agents across Sekyere Kumawu log local
@@ -335,7 +335,7 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {highlights.map((item, index) => (
                   <li key={item} className="group flex items-start gap-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7a5a3b] shadow-md transition-transform group-hover:scale-110">
                       <span className="text-sm font-bold text-white">
                         {index + 1}
                       </span>
@@ -354,7 +354,7 @@ export default function LandingPage() {
                 {stats.map((stat) => (
                   <div
                     key={stat.label}
-                    className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl"
+                    className="group rounded-2xl border border-[#d7c8ab]/60 bg-[#fbfaf7]/80 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl"
                   >
                     <p className="text-3xl font-extrabold text-gray-900">
                       {stat.value}
@@ -370,12 +370,12 @@ export default function LandingPage() {
 
           <section
             id="auth-card"
-            className="order-2 rounded-3xl border border-white/50 bg-white/80 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:order-none lg:sticky lg:top-6"
+            className="order-2 rounded-3xl border border-[#d7c8ab]/60 bg-[#fbfaf7]/88 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:order-none lg:sticky lg:top-6"
           >
             <div className="mb-6 sm:mb-8">
               <div className="mb-5 flex items-center justify-between sm:mb-6">
                 <div>
-                  <p className="text-sm font-semibold text-emerald-600">
+                  <p className="text-sm font-semibold text-[#7a5a3b]">
                     {authMode === "login" ? "Welcome back" : "Get started"}
                   </p>
                   <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">
@@ -383,7 +383,7 @@ export default function LandingPage() {
                   </h3>
                 </div>
               </div>
-              <div className="flex gap-2 rounded-xl bg-gray-100 p-1">
+              <div className="flex gap-2 rounded-xl bg-[#ece5d8] p-1">
                 {["login", "register"].map((mode) => (
                   <button
                     key={mode}
@@ -417,7 +417,7 @@ export default function LandingPage() {
                           fullName: event.target.value,
                         }))
                       }
-                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                       placeholder="John Doe"
                     />
                   </div>
@@ -436,7 +436,7 @@ export default function LandingPage() {
                           phoneNumber: event.target.value,
                         }))
                       }
-                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                       placeholder="+233001234567"
                     />
                   </div>
@@ -454,7 +454,7 @@ export default function LandingPage() {
                           locationOptions.find(
                             (location) =>
                               location.type === "TOWN" &&
-                              location.parentLocationId === nextMetroDistrict
+                              location.parentLocationId === nextMetroDistrict,
                           )?.id ?? "";
                         setForm((prev) => ({
                           ...prev,
@@ -462,8 +462,10 @@ export default function LandingPage() {
                           district: nextTownId,
                         }));
                       }}
-                      disabled={locationsLoading || metroDistrictOptions.length === 0}
-                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      disabled={
+                        locationsLoading || metroDistrictOptions.length === 0
+                      }
+                      className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                     >
                       {metroDistrictOptions.map((location) => (
                         <option key={location.id} value={location.id}>
@@ -487,7 +489,7 @@ export default function LandingPage() {
                         }))
                       }
                       disabled={locationsLoading || townOptions.length === 0}
-                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                     >
                       {townOptions.map((location) => (
                         <option key={location.id} value={location.id}>
@@ -496,15 +498,17 @@ export default function LandingPage() {
                       ))}
                     </select>
                     <p className="mt-2 text-xs text-gray-500">
-                      All new signups are created as Field Agents for Sekyere Kumawu District Assembly.
+                      All new signups are created as Field Agents for Sekyere
+                      Kumawu District Assembly.
                     </p>
                     {!locationsLoading &&
                       (metroDistrictOptions.length === 0 ||
                         townOptions.length === 0) && (
-                      <p className="mt-2 text-xs text-amber-700">
-                        No district and town locations are available yet. Ask an admin to configure them first.
-                      </p>
-                    )}
+                        <p className="mt-2 text-xs text-amber-700">
+                          No district and town locations are available yet. Ask
+                          an admin to configure them first.
+                        </p>
+                      )}
                   </div>
                 </>
               )}
@@ -520,7 +524,7 @@ export default function LandingPage() {
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, email: event.target.value }))
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                   placeholder="you@example.com"
                 />
               </div>
@@ -540,7 +544,7 @@ export default function LandingPage() {
                       password: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full rounded-xl border border-[#cdbd9a] bg-white px-4 py-3 text-gray-900 shadow-sm transition-all focus:border-[#7a5a3b] focus:outline-none focus:ring-2 focus:ring-[#7a5a3b]/20"
                   placeholder="••••••••"
                 />
               </div>
@@ -556,22 +560,22 @@ export default function LandingPage() {
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:shadow-emerald-600/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
+                className="w-full rounded-xl bg-[#7a5a3b] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#7a5a3b]/25 transition-all hover:bg-[#62482f] hover:shadow-xl hover:shadow-[#7a5a3b]/35 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg"
               >
                 {authLoading
                   ? "Connecting…"
                   : authMode === "login"
-                  ? "Sign in"
-                  : "Create account"}
+                    ? "Sign in"
+                    : "Create account"}
               </button>
             </form>
 
-            <div className="mt-6 space-y-4 rounded-2xl border border-gray-200/50 bg-gradient-to-br from-gray-50 to-gray-100/50 p-5 sm:mt-8 sm:p-6">
+            <div className="mt-6 space-y-4 rounded-2xl border border-[#d7c8ab]/60 bg-[#f8f5ee] p-5 sm:mt-8 sm:p-6">
               <p className="text-sm font-bold text-gray-900">How it works</p>
               <ul className="space-y-4 text-sm text-gray-700">
                 {quickSteps.map((step, index) => (
                   <li key={step.title} className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#7a5a3b] text-xs font-bold text-white">
                       {index + 1}
                     </span>
                     <div>
@@ -590,7 +594,7 @@ export default function LandingPage() {
             <ul className="space-y-4">
               {highlights.map((item, index) => (
                 <li key={item} className="group flex items-start gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md transition-transform group-hover:scale-110">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#7a5a3b] shadow-md transition-transform group-hover:scale-110">
                     <span className="text-sm font-bold text-white">
                       {index + 1}
                     </span>
@@ -609,7 +613,7 @@ export default function LandingPage() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="group rounded-2xl border border-white/50 bg-white/60 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl sm:p-6"
+                  className="group rounded-2xl border border-[#d7c8ab]/60 bg-[#fbfaf7]/80 p-5 shadow-lg backdrop-blur-sm transition-all hover:scale-105 hover:shadow-xl sm:p-6"
                 >
                   <p className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
                     {stat.value}
@@ -624,7 +628,7 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <footer className="border-t border-white/30 bg-white/30 backdrop-blur-sm">
+      <footer className="border-t border-[#d7c8ab]/60 bg-[#f8f5ee]/70 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
           <div className="flex flex-col items-center justify-center gap-6">
             <div className="flex flex-wrap items-center justify-center gap-8">

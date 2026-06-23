@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #f2eee5;
+  --foreground: #171415;
+  --skda-cream: #f2eee5;
+  --skda-cream-soft: #f8f5ee;
+  --skda-charcoal: #171415;
+  --skda-stone: #8e8b83;
+  --skda-gold: #c39a4a;
+  --skda-gold-deep: #a98135;
+  --skda-olive: #7a5a3b;
+  --skda-olive-deep: #62482f;
+  --skda-brown: #7a5a3b;
   --font-geist-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
     "Helvetica Neue", sans-serif;
   --font-geist-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono",
@@ -32,14 +41,19 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #ece5d8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #b7a27b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #95794a;
+}
+
+::selection {
+  background: rgba(195, 154, 74, 0.25);
+  color: var(--skda-charcoal);
 }

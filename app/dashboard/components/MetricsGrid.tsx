@@ -19,7 +19,7 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
       {metrics.map((metric) => (
         <div
           key={metric.label}
-          className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="rounded-xl border border-[#d7c8ab] bg-[#fbfaf7] p-6 shadow-sm"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -40,12 +40,12 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
               <div
                 className={`h-6 w-6 ${
                   metric.color === "blue"
-                    ? "bg-blue-500"
+                    ? "bg-blue-600"
                     : metric.color === "green"
-                    ? "bg-green-500"
+                    ? "bg-green-600"
                     : metric.color === "purple"
-                    ? "bg-purple-500"
-                    : "bg-red-500"
+                    ? "bg-purple-600"
+                    : "bg-red-600"
                 } rounded`}
               ></div>
             </div>
@@ -53,10 +53,14 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
           <div className="mt-4 flex items-center">
             <span
               className={`text-sm font-semibold ${
-                metric.color === "green"
-                  ? "text-green-600"
+                metric.color === "blue"
+                  ? "text-blue-700"
+                  : metric.color === "green"
+                  ? "text-green-700"
+                  : metric.color === "purple"
+                  ? "text-purple-700"
                   : metric.color === "red"
-                  ? "text-red-600"
+                  ? "text-red-700"
                   : "text-gray-600"
               }`}
             >

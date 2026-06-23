@@ -79,7 +79,7 @@ export function LocationsTab({
           onChange={(e) =>
             onNewLocationTypeChange(e.target.value as "METRO_DISTRICT" | "TOWN")
           }
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
         >
           <option value="METRO_DISTRICT">Metro / District</option>
           <option value="TOWN">Town</option>
@@ -94,7 +94,7 @@ export function LocationsTab({
           <select
             value={newLocationParentId}
             onChange={(e) => onNewLocationParentIdChange(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
           >
             <option value="">Select parent district</option>
             {metroDistricts.map((metroDistrict) => (
@@ -117,7 +117,7 @@ export function LocationsTab({
           }
           value={newLocationName}
           onChange={(e) => onNewLocationNameChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7a5a3b] focus:outline-none"
         />
       </label>
 
@@ -125,7 +125,7 @@ export function LocationsTab({
         type="button"
         onClick={handleCreateAndClose}
         disabled={!canCreateLocation}
-        className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {creatingLocation ? "Creating location..." : "Create location"}
       </button>
@@ -142,7 +142,7 @@ export function LocationsTab({
         <button
           type="button"
           onClick={() => setCreateModalOpen(true)}
-          className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 lg:hidden"
+          className="mt-4 w-full rounded-lg bg-[#7a5a3b] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#62482f] lg:hidden"
         >
           + Create location
         </button>
@@ -155,7 +155,7 @@ export function LocationsTab({
           <div className="mt-4 max-h-[32rem] space-y-4 overflow-auto pr-1">
             {locationsLoading ? (
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-600" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#7a5a3b]" />
                 <span>Loading locations...</span>
               </div>
             ) : townsByParent.length === 0 ? (

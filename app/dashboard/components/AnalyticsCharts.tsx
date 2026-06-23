@@ -33,14 +33,14 @@ import {
 import { loadSessionCache, saveSessionCache } from "@/lib/storage";
 
 const COLORS = {
-  emerald: "#10b981",
-  teal: "#14b8a6",
-  blue: "#3b82f6",
-  purple: "#a855f7",
-  orange: "#f97316",
-  red: "#ef4444",
-  yellow: "#eab308",
-  pink: "#ec4899",
+  emerald: "#16a34a",
+  teal: "#0f766e",
+  blue: "#2563eb",
+  purple: "#9333ea",
+  orange: "#d97706",
+  red: "#dc2626",
+  yellow: "#ca8a04",
+  pink: "#db2777",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -205,11 +205,11 @@ export function AnalyticsCharts({ token, locationId }: AnalyticsChartsProps) {
 
   if (coreLoading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-12">
+      <div className="flex min-h-[400px] items-center justify-center rounded-2xl bg-gradient-to-br from-[#f8f5ee] to-[#efe6d5] p-12">
         <div className="text-center">
           <div className="relative mx-auto h-16 w-16">
-            <div className="absolute inset-0 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
-            <div className="absolute inset-2 animate-ping rounded-full bg-emerald-400 opacity-20"></div>
+            <div className="absolute inset-0 animate-spin rounded-full border-4 border-[#d7c8ab] border-t-[#7a5a3b]"></div>
+            <div className="absolute inset-2 animate-ping rounded-full bg-[#c39a4a] opacity-20"></div>
           </div>
           <p className="mt-6 text-lg font-semibold text-gray-900">Loading Analytics</p>
           <p className="mt-2 text-sm text-gray-600">Preparing your insights...</p>
