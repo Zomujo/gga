@@ -13,7 +13,7 @@ import {
 import { consumeAuthNotice, loadAuth, saveAuth } from "@/lib/storage";
 
 const highlights = [
-  "Community reporting tied directly to Sekyere Kumawu District Assembly",
+  "Community reporting connected to participating district assemblies",
   "Clear case ownership across towns and communities",
   "Visible follow-through on local service delivery issues",
 ];
@@ -21,7 +21,7 @@ const highlights = [
 const quickSteps = [
   {
     title: "1. Create an account",
-    copy: "Register as a field agent for Sekyere Kumawu District Assembly.",
+    copy: "Choose your district and town to register as a field agent.",
   },
   {
     title: "2. Submit reports",
@@ -35,7 +35,6 @@ const quickSteps = [
 
 const FIELD_OFFICER_DEFAULT_DEPARTMENT_ID =
   "860441fe-cfb6-4c52-90af-6eb29e1e06ba";
-const SKDA_DISTRICT_NAME = "Sekyere Kumawu";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -102,12 +101,7 @@ export default function LandingPage() {
         const metroDistricts = rows.filter(
           (location) => location.type === "METRO_DISTRICT",
         );
-        const skdaDistrict =
-          metroDistricts.find(
-            (location) => location.name === SKDA_DISTRICT_NAME,
-          ) ?? null;
         const defaultMetroDistrictId =
-          skdaDistrict?.id ??
           metroDistricts[0]?.id ??
           rows[0]?.parentLocationId ??
           rows[0]?.id ??
@@ -125,13 +119,11 @@ export default function LandingPage() {
           metroDistrict: prev.metroDistrict || defaultMetroDistrictId,
           district: prev.district || defaultTownId,
         }));
-        const districtTownCount = rows.filter(
-          (location) =>
-            location.type === "TOWN" &&
-            location.parentLocationId === defaultMetroDistrictId,
+        const townCount = rows.filter(
+          (location) => location.type === "TOWN",
         ).length;
         setLandingStats({
-          assemblies: districtTownCount,
+          assemblies: townCount,
           activeCases:
             (publicStats.inProgress ?? 0) + (publicStats.pending ?? 0),
           citizensServed: publicStats.totalCases ?? 0,
@@ -220,13 +212,7 @@ export default function LandingPage() {
   const allMetroDistrictOptions = locationOptions.filter(
     (location) => location.type === "METRO_DISTRICT",
   );
-  const skdaDistrict =
-    allMetroDistrictOptions.find(
-      (location) => location.name === SKDA_DISTRICT_NAME,
-    ) ?? null;
-  const metroDistrictOptions = skdaDistrict
-    ? [skdaDistrict]
-    : allMetroDistrictOptions;
+  const metroDistrictOptions = allMetroDistrictOptions;
   const townOptions = locationOptions.filter(
     (location) =>
       location.type === "TOWN" &&
@@ -291,7 +277,7 @@ export default function LandingPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <p className="text-sm text-gray-600">
-          Loading Sekyere Kumawu District Assembly…
+          Loading Civic…
         </p>
       </div>
     );
@@ -301,12 +287,27 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#f2eee5]">
       <header className="border-b border-[#d7c8ab]/60 bg-[#f8f5ee]/75 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">
+                Civic
+              </p>
+              <p className="text-xs font-medium text-gray-600">
+                Community service delivery portal
+              </p>
+            </div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-auto items-center justify-center overflow-hidden sm:h-12">
+              <div className="flex h-9 w-16 items-center justify-center overflow-hidden sm:h-10 sm:w-20">
                 <img
                   src={encodeURI("/skda-logo.jpeg")}
                   alt="Sekyere Kumawu District Assembly"
+                  className="h-full w-auto object-contain"
+                />
+              </div>
+              <div className="flex h-9 w-16 items-center justify-center overflow-hidden sm:h-10 sm:w-20">
+                <img
+                  src={encodeURI("/south-tongu-logo.jpg")}
+                  alt="South Tongu District"
                   className="h-full w-auto object-contain"
                 />
               </div>
@@ -320,14 +321,13 @@ export default function LandingPage() {
           <section className="order-1 space-y-8 lg:space-y-8">
             <div className="space-y-4 sm:space-y-5">
               <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-gray-900 sm:text-5xl lg:text-6xl">
-                Report community issues to{" "}
-                <span className="text-[#7a5a3b]">Sekyere Kumawu</span> District
-                Assembly.
+                Report community issues to your{" "}
+                <span className="text-[#7a5a3b]">district assembly.</span>
               </h2>
               <p className="max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg lg:text-lg">
-                This portal helps field agents across Sekyere Kumawu log local
-                concerns, route them into the district response process, and
-                keep progress visible from report to resolution.
+                Civic helps field agents log local concerns, route them to the
+                right district team, and keep progress visible from report to
+                resolution.
               </p>
             </div>
 
@@ -498,8 +498,8 @@ export default function LandingPage() {
                       ))}
                     </select>
                     <p className="mt-2 text-xs text-gray-500">
-                      All new signups are created as Field Agents for Sekyere
-                      Kumawu District Assembly.
+                      All new signups are created as Field Agents for the
+                      selected district and town.
                     </p>
                     {!locationsLoading &&
                       (metroDistrictOptions.length === 0 ||
@@ -637,9 +637,14 @@ export default function LandingPage() {
                 alt="Sekyere Kumawu District Assembly"
                 className="h-12 w-auto object-contain opacity-90"
               />
+              <img
+                src={encodeURI("/south-tongu-logo.jpg")}
+                alt="South Tongu District"
+                className="h-12 w-auto object-contain opacity-90"
+              />
             </div>
             <p className="text-xs text-gray-600">
-              © 2026 Sekyere Kumawu District Assembly
+              © 2026 Civic community service delivery portal
             </p>
           </div>
         </div>

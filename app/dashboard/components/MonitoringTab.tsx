@@ -12,6 +12,7 @@ interface MetricItem {
   change: string;
   trend: "up" | "down";
   color: "blue" | "green" | "purple" | "red";
+  footerLabel?: string;
 }
 
 interface MonitoringTabProps {

@@ -56,16 +56,9 @@ export function DashboardNav({
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-auto items-center justify-center overflow-hidden">
-              <img
-                src={encodeURI("/skda-logo.jpeg")}
-                alt="Sekyere Kumawu District Assembly"
-                className="h-full w-auto object-contain"
-              />
-            </div>
             <div className="min-w-0">
               <h1 className="truncate text-lg font-bold text-gray-900 sm:text-xl">
-                Sekyere Kumawu
+                Civic
               </h1>
               <p className="truncate text-xs text-gray-600 sm:text-sm">
                 District Assembly Service Portal

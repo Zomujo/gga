@@ -42,16 +42,17 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
   const monitoringMetrics = useMemo(
     () => [
       {
-        label: "Active Cases",
+        label: "Reports Created",
         value: monitoringStats?.activeCases ?? 0,
         change: monitoringStats?.activeCasesChange 
           ? (monitoringStats.activeCasesChange > 0 ? `+${monitoringStats.activeCasesChange}` : `${monitoringStats.activeCasesChange}`)
           : "0",
         trend: (monitoringStats?.activeCasesChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "blue" as const,
+        footerLabel: "last 7 days vs prior 7 days",
       },
       {
-        label: "Avg Response",
+        label: "Avg Response Time",
         value: `${formatMetricNumber(monitoringStats?.avgResponseHours)}h`,
         change: monitoringStats?.avgResponseHoursChange
           ? (
@@ -62,6 +63,7 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
           : "0h",
         trend: (monitoringStats?.avgResponseHoursChange ?? 0) < 0 ? ("up" as const) : ("down" as const),
         color: "green" as const,
+        footerLabel: "responses in the last 7 days",
       },
       {
         label: "Resolution Rate",
@@ -75,15 +77,15 @@ export function useMonitoring({ token, currentUser }: UseMonitoringOptions) {
           : "0%",
         trend: (monitoringStats?.resolutionRateChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
         color: "purple" as const,
+        footerLabel: "reports created in the last 7 days",
       },
       {
-        label: "Overdue Cases",
+        label: "Open Cases Over 7 Days",
         value: monitoringStats?.overdueCases ?? 0,
-        change: monitoringStats?.overdueCasesChange
-          ? (monitoringStats.overdueCasesChange > 0 ? `+${monitoringStats.overdueCasesChange}` : `${monitoringStats.overdueCasesChange}`)
-          : "0",
-        trend: (monitoringStats?.overdueCasesChange ?? 0) > 0 ? ("up" as const) : ("down" as const),
+        change: "Received or in progress",
+        trend: "down" as const,
         color: "red" as const,
+        footerLabel: "current total, not a weekly comparison",
       },
     ],
     [monitoringStats]
